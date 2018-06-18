@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Logbook</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- <link rel="stylesheet" href="css/font-awesome-min.css"> -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <form class="search-form">
+    <input type="text" class="search" placeholder="Climb or Crag">
+    <div class="viewbox">
+      <div class="list-container">
+        <ul class="suggestions">
+          <li>Filter for a climb</li>
+          <li>or a crag</li>
+        </ul>
+      </div>
+    </div>
+  </form>
+
+
+
+
+<script>
+
+// adapted from ajax type ahead thing
+
+
+// - steps:
+// 1 - fetch data (array from endpoint)
+// 2 - type into the input box, filter the text by subset which the climb or crag matches
+// 3 - click button, show more info about climb or crag
+//    - when a climb is selected, data comes from climb ID (inferred by order in data array)
+//    - when a crag is selected, data on all climbs I have done at the crag becomes available
+
+
+
+// 1 - get data
+// 2 - get functions in place
+// 3 - hook up to event listeners
+
+
+// fetch API will return a promise
+
+
+// things to try out
+// - use geolocation - sort by crags closest to me
+
+
+// ________________________________________________
+const endpoint = 'json/mb-logbook.json';
+
+// use fetch API with the endpoint
+const climbs = [];
+
+// const prom = fetch(endpoint);
+// console.log(prom); // this will return a promise in the console - no data yet, something will come back
+
+
+// fetch(endpoint).then(blob => console.log(blob));
+// data that comes back from fetch does not yet know what type it is
+// - in 'proto' in console log, there is a method called 'JSON'
+// -> this returns another promise, which you call then on
+
+fetch(endpoint)
+    .then(blob => blob.json())
+    // .then(data => console.log(data)) // logs out all items in array
+    // .then(data => climbs = data) // this results in an array within the array, should climbs be assigned with 'let'
+    .then(data => climbs.push(...data)) // use spread operator to spread into climbs
+
+
+
+
+
+// find matches function
+// - gets climb data for matched text, from the original array
+
+// - can only take strings. Integer 999 stumped this before
+// - need to convert integers to strings
+function findMatches(wordToMatch, climbs) {
+  // filter the climbs - a subset of the initial array
+  return climbs.filter(entry => {
+
+    // figure out if the climb or crag matches what was searched
+    const regex = new RegExp(wordToMatch, 'gi'); // pass 'flags' you want to search (global, insensitive)    
+
+    // this will filter out integers - e.g. the climb 999
+    // - regular expressions only work on strings, original array needs to be changed
+    if ( entry.climb === parseInt(entry.climb, 10)){
+      // convert entry.climb to an integer and return it?
+    } else {
+      // call match with regex on climb name or crag name
+      return entry.climb.match(regex) || entry.crag.match(regex)
+    }
+
+  })
+}
+
+
+
+
+
+
+
+
+// display matches function
+// - take value of the input field, convert it into matched items from the data
+function displayMatches(){
+
+  // call the findMatches function, passing the value to it
+  const matchArray = findMatches(this.value, climbs);
+
+  // compose html
+  let html = matchArray.map(entry => {
+    
+    // format the html - highlight the searchterm:
+    // 1 - use a regex to match
+    // 2 - wrap match in a span - highlight in yellow
+    const regex = new RegExp(this.value, 'gi');
+    const climbName = entry.climb.replace(regex, `<span class="hl">${this.value}</span>`);
+    const cragName = entry.crag.replace(regex, `<span class="hl">${this.value}</span>`);
+    
+    // add an ID to each climb - for more info on button click
+    const climbDate = entry.Date;
+    const climbID = climbs.indexOf(entry); // search for entry (item in 'climbs' array)
+    
+    return `
+      <li class="searched" data-date="${climbDate}" data-id="${climbID}">
+        <span class="date">${climbDate}</span>
+        <span class="name">${climbName}, ${cragName}</span>
+        <span class="more"><i class="fa fa-chevron-right"></i></span>
+      </li>
+    `;
+  }).join(''); // this returns an array (of matches), which need to be joined into a string
+
+  // no results message
+  if (html.length < 1) {
+    html = `<li class="no-results">No results found. Please try again</li>`;
+  }
+  // add above html to suggestions
+  suggestions.innerHTML = html;
+
+  // find out when input is focused. Want to make climb-info work on 1st click
+  // console.dir(searchInput);
+
+
+}
+
+// get DOM nodes
+const searchInput = document.querySelector('.search');
+const suggestions = document.querySelector('.suggestions');
+const listContainer = document.querySelector('.list-container');
+
+// listen for the change AND keyup events on the input box
+searchInput.addEventListener('change', displayMatches);
+searchInput.addEventListener('keyup', displayMatches);
+
+
+
+
+
+
+
+
+// __________________
+// more info buttons
+
+// 1 - get the clicked button
+// 2 - get the data associated with it
+// 3 - compose html for associated data
+// 4 - add html to DOM
+// 5 - slide out previous list, slide in new one, with button to slide back
+listContainer.addEventListener("click", moreInfo);
+
+
+
+
+function expand(obj) {
+  var keys = Object.keys(obj);
+  for (var i = 0; i < keys.length; ++i) {
+    var key = keys[i],
+    subkeys = key.split(/,\s?/),
+    target = obj[key];
+    delete obj[key];
+    subkeys.forEach(function(key) { obj[key] = target; })
+  }
+  return obj;
+}
+
+
+
+
+// switch between list and individual items - ul.suggestions and ul.climb-info
+function moreInfo(e) {
+
+  
+
+
+
+  // more button
+  // - this does not fire on first click, only second click. Needs to fire on first
+  // - may be because input field is still focused. First click de-focuses input field.
+  // NOTE: this section will get bloated - look into ways of splitting js up
+  if (e.target && e.target.nodeName == "LI" && e.target.classList.contains('searched')) {
+
+
+    // Y coordinate of the clicked li won't work. Some elements will overflow bottom of page
+    // - use viewport instead
+    // console.dir(e.target.offsetTop);
+    const topOffset = window.pageYOffset + 10;
+
+
+    // get the ID (convert to numeric)
+    let ID = e.target.getAttribute('data-id');
+    ID = parseInt(ID);
+    // get the climb from the array
+    const ascent = climbs[ID];
+    // get full info
+    const date = ascent.Date;
+    const name = ascent.climb;
+    let grade = ascent.Grade; // need to convert to a string - lower grade american routes are numerical in data
+    grade = grade.toString();
+    const style = ascent.Style;
+    const partners = ascent["Partner(s)"];
+    const notes = ascent.Notes;
+    const crag = ascent.crag;
+
+
+
+    // plan:
+    // - jazz up info by parsing the content, adding colours, and different icons
+
+    
+    // _________________
+    // grade
+    // - star count, discipline, grade band colour
+    // grade band dependent upon discipline, and grading system
+    // - can't really tell discipline from grade for roped climbs, unless in UK system
+    // - most complex parameter of the lot
+
+    // default = black. Also E4 / 7a+ / f6B / 5.12a / n7
+    // red = E1 - E3 / 6b - 7a / f5 - f6A+ / 5.10a - 5.11d / n6
+    // yellow = HS - HVS / 5a - 6a+ / f4 - f4+ / n5
+    // green = M - S / 
+
+    // discipline
+    // - look at start of string with ^
+    // - order is of importance here - uk trad later. Try [^ with chars to exclude] alternatively
+    // - account for mixed, ice, and winter - starts with 'M', 'W', 'I' and 'V'
+    // - caution - mod and vs - mixed and winter
+
+
+    
+    //_______________________
+    // could be better to make arrays / objects of grades, then map the grade to these
+    // - regex is a pain, else if returns radically different results
+    // - something like the below could make code more maintainable
+    // - perhaps not actually, especially if I want to include discipline
+    const gradeBands = expand({
+      // black : ["E4", "E5", "E6"],
+      // red : ["E1", "E2", "E3", "6b", "6b+", "6c", "6c+", "7a"],
+      // yellow : ["HS", "VS", "HVS"],
+      // green : ["M", "D", "VD", "HVD"],
+
+      // UKTrad
+      // "D, VD, HVD, S" : {
+      //   band : 'green',
+      //   discipline : 'UKTrad'
+      // },
+      // "HS, VS, HVS" : {
+      //   band : 'yellow',
+      //   discipline : 'UKTrad'
+      // },
+      // "E1, E2, E3" : {
+      //   band : 'red',
+      //   discipline : 'UKTrad'
+      // }
+      "D, VD, HVD, S" : {
+        band : 'green'
+      }
+      
+    });
+
+
+    const gradeDisciplines = expand({
+
+      "D, VD, HVD, S" : {
+        discipline : 'UKTrad'
+      }
+      
+    });
+
+    // This outputs info - if specific grade is entered.
+    // - will not be any less code heavy than the below
+    const gradeSplit = grade.split(" ")[0]; // first word determines the colour and discipline
+    
+    
+    console.log(gradeBands[gradeSplit].band);
+
+    console.log(gradeDisciplines[gradeSplit].discipline);
+
+
+    // alternative idea:
+    // - isolate/tighten up the below regexes (if only, not else if)
+    // - make regexes very specific - filter right down to a specific grade (with colour and style)
+    // - add them to an array, loop over each
+
+    // situation:
+    // - lots of specific regexes - a bit of a pain to write
+    // OR
+    // - lots of conditionals
+
+
+
+    let discipline;
+    let colour;
+
+    if (grade.match(/^W/)) {
+      discipline = 'ice';
+    }
+    else if (grade.match(/^M[0-9]/)) { // M followed by a number
+      discipline = 'mixed';
+    }
+    else if (grade.match(/^f/)) {
+      discipline = 'bouldering';
+    }
+    else if (grade.match(/^I|V(?!S|D)/)) { // I or V if not followed by S or D
+      discipline = 'winter';
+    }
+    // trad
+    else if (grade.match(/^[A-Z]/)) { // starts with a capital letter, comes after the above
+      discipline = 'UK trad';
+      if (grade.match(/^M|D|S/)) { // Mod, Diff, Severe
+        colour = ' green';
+      } 
+      if (grade.match(/^H|V(?=VS|S)/)) { // H or V if followed by VS or S
+        colour = ' yellow';
+      }
+      if (grade.match(/HVD/g)) { // Diff divisions - need to overwrite the last if statement
+        colour = ' green';
+      }
+      if (grade.match(/^E[1-3]/)) {
+        colour = ' red';
+      }
+      if (grade.match(/^E[4-9]/)) {
+        colour = ' black';
+      }
+    }
+
+
+    // sport
+    else if (grade.match(/^[1-9][a-c]/)) { // starts with a number, followed by lowercase letter
+      discipline = 'French grade - usually sport';
+      if (grade.match(/^[1-4]/)) {
+        colour = ' green';
+      }
+      if (grade.match(/^5|6(?=a)/)) {
+        colour = ' yellow';
+      }
+      if (grade.match(/^6(?=[b-c])|7(?=a)/)) {
+        colour = ' red';
+      }
+      if (grade.match(/7a\+|^7(?=[b-c])|[8-9]/)) {
+        colour = ' black';
+      }
+    }
+
+    // USA
+    else if (grade.match(/^5/)) { // starts with a 5
+      discipline = 'American grade - sport or trad';
+    }
+    else if (grade.match(/^n/)) { // starts with a lowercase n
+      discipline = 'Norse grade - sport or trad';
+    }
+
+    // stars: swap * for fa-star
+    const withStars = grade.replace(/\*/g,"<i class='fa fa-star yellow margin-left'></i>");
+    const gradeHtml = `<li class="grade"><i class="fa fa-circle${colour}"></i>${withStars}</li>`;
+
+    // discipline
+    const disciplineHtml = `<li class="discipline"><i class="fa fa-chevron-right"></i>${discipline}</li>`;
+
+
+
+
+
+
+
+
+
+    
+    
+    // _________________
+    // style
+    // Lead (or solo) + (0/S, _, RP, rpt) = green (note that '_' is a flash)
+    // TR + (0/S, _, G/U, RP, rpt) = blue
+    // dog, dnf = red
+
+    let success = /(O\/S|_|G\/U|RP|rpt)/;
+    success = style.match(success);
+
+    let fail = /(dog|dnf)/;
+    fail = style.match(fail);
+
+    // set colour and icon
+    let styleColour;
+    let styleIcon;
+    let styleUnset;
+    
+    if (fail !== null){
+      styleColour = ' red';
+      styleIcon = ' fa-close';
+    }
+    else if (success !== null){
+      styleIcon = ' fa-check';
+      if (success.input.split(" ")[0] == 'TR' | success.input.split(" ")[0] == '2nd') {
+        styleColour = ' blue';
+      } else {
+        styleColour = ' green';
+      }
+    }
+    else {
+      // style has not been set
+      styleIcon = ' fa-question';
+      styleColour = ' grey';
+      styleUnset = ' - style not set';
+    }
+
+    // beta: swap _ from data for β
+    const withBeta = style.replace(/_/g,"β (flash)");
+    const styleHtml = `<li class="style${styleColour}"><i class="fa${styleIcon}"></i>${withBeta} ${styleUnset !== undefined ? `${styleUnset}` : ""}</li>`;
+
+
+
+    // _________________
+    // partner(s)
+    // if string contains a comma. Will break if partner's name does not contain a comma for some reason.
+    const partnerPlural = partners.includes(',');
+    const partnerHtml = `<li class="partners"><i class="fa fa-user${partnerPlural == false ? "" : "s"}"></i>${partners}</li>`;
+
+
+    // _________________
+    // notes
+    const notesHtml = `<li class="notes${notes ? "" : " no-notes"}"><i class="fa fa-edit"></i>${notes ? ascent.Notes : "No notes contributed for this climb"}</li>`;
+
+
+
+    
+    
+    const html = `
+    <ul class="climb-info"${topOffset > 10 ? ` style="margin-top:${topOffset}px;"` : ""}>
+      <li class="title">
+        <span class="date back">
+          ${date}
+          <i class="fa fa-chevron-left"></i>
+        </span>
+        ${name}
+      </li>
+      ${gradeHtml}
+      ${disciplineHtml}
+      ${styleHtml}
+      ${partnerHtml}
+      ${notesHtml}
+      <li class="crag"><i class="fa fa-map-marker red"></i>${crag}</li>
+    </ul>
+    `;
+
+    // console.log(notes);
+
+    listContainer.insertAdjacentHTML('beforeend', html);
+    listContainer.classList.add('slide-left');
+    suggestions.classList.add('shadow-off');
+
+  }
+
+
+
+
+    
+
+
+
+
+
+
+
+  
+  // back button
+
+  // target back button / icon
+  if (e.target && e.target.nodeName == "SPAN" && e.target.classList.contains('back')) {
+    
+    // slide right
+    listContainer.classList.remove('slide-left');
+    // add default shadow back to .suggestions
+    suggestions.classList.remove('shadow-off');
+
+    // remove climb info ul
+    // - take delay value from css (transition on list container = 0.5s)
+    // - remove 's'
+    let time = window.getComputedStyle(listContainer).transitionDuration.slice(0, -1);
+    // - multiply by 1000
+    time = parseFloat(time)*1000;
+    setTimeout(function(){
+      listContainer.querySelector('.climb-info').remove();
+    }, time);
+
+
+  }
+
+
+}
+
+
+
+
+</script>
+
+
+
+
+  </body>
+</html>

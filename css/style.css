@@ -1,0 +1,219 @@
+    html {
+      box-sizing: border-box;
+      background:#ffc600;
+      font-family:'helvetica neue';
+      font-size: 20px;
+      font-weight: 200;
+    }
+    *, *:before, *:after {
+      box-sizing: inherit;
+    }
+    input {
+      width: 100%;
+      padding:20px;
+    }
+
+    .search-form {
+      max-width:400px;
+      margin:50px auto;
+    }
+
+    input.search {
+      margin: 0;
+      text-align: center;
+      outline:0;
+      border: 10px solid #F7F7F7;
+      width: 120%;
+      left: -10%;
+      position: relative;
+      top: 10px;
+      z-index: 2;
+      border-radius: 5px;
+      font-size: 40px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.12), inset 0 0 2px rgba(0, 0, 0, 0.19);
+    }
+
+
+    
+
+
+    .suggestions,
+    .climb-info {
+      width:100%;
+      max-width:400px;
+      margin: 10px 0 0;
+      padding: 0;
+      position: relative;
+    }
+    .suggestions li {
+      background:white;
+      list-style: none;
+      border-bottom: 1px solid #D8D8D8;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.14);
+      margin:0;
+      padding:20px;
+      transition: background 0.2s;
+      display:flex;
+      justify-content:space-between;
+      text-transform: capitalize;
+      position : relative;
+    }
+
+    /* after search */
+    .suggestions li.searched {
+      padding-left:109px;
+      cursor : pointer;
+      transition : linear-gradient 0.5s;
+    }
+    .suggestions li.searched:hover {
+      background: linear-gradient(to top,  #ffffff 0%,#EFEFEF 100%);
+    }
+    .suggestions li.searched > span {
+      pointer-events : none;
+    }
+
+
+    /* right arrow */
+    .suggestions li.searched .fa {
+      transition : translateX 0.5s;
+    }
+    .suggestions li.searched:hover .fa {
+      transform : translateX(5px);
+    }
+
+    span.date {
+      position : absolute;
+      top : 0;
+      left : 0;
+      bottom : 0;
+      padding : 10px;
+      width : 90px;
+      background : #D8D8D8;
+      color : #000;
+      font-size : 15px;
+      cursor:pointer;
+      pointer-events:auto;
+    }
+
+
+    /* highlights */
+    .hl {
+      background:#ffc600;
+    }
+
+
+
+
+    /* view mechanics */
+    .viewbox {
+      overflow:hidden;
+    }
+    .list-container {
+      display:flex;
+      flex-direction:row;
+      width:800px;
+      transform: translateX(0%);
+      transition: 0.5s;
+    }
+
+
+
+
+
+    /*
+    climb info - individual ascents
+    */
+    .climb-info {
+      background:white;
+      list-style: none;
+      border-bottom: 1px solid #D8D8D8;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.14);
+      padding:20px;
+      padding-left:109px;
+      align-self:flex-start;
+    }
+    .climb-info li {
+      list-style : none;
+      margin-bottom : 5px;
+    }
+    .climb-info li.title .fa {
+      position : absolute;
+      top : calc(50% - 10px);
+      left : calc(50% - 10px);
+      pointer-events : none;
+    }
+    .climb-info li.title .date {
+      cursor : pointer;
+    }
+    .climb-info li.title:not(.date){
+      font-size : 25px;
+      text-align : center;
+      margin-bottom : 20px;
+      padding-bottom : 10px;
+      border-bottom : 2px solid;
+    }
+    /* icons */
+    .climb-info li > .fa:first-child {
+      margin-right : 10px;
+    }
+    .climb-info li.notes {
+      margin : 20px 0;
+      padding : 10px 0;
+      border-top : 2px solid;
+      border-bottom : 2px solid;
+      font-size : 17px;
+      line-height : 1.35;
+    }
+    .climb-info li.notes .fa {
+      font-size : 20px;  
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /* utility classes - added / removed to the uls */
+    .slide-left {
+      transform : translateX(-50%);
+    }
+    /* .slide-right {
+      transform : translateX(100%);
+    } */
+    .shadow-off li {
+      box-shadow:none;
+    }
+    .no-notes {
+      color : #adadad;
+    }
+    .no-results {
+      color : #e74e42;
+    }
+    .margin-left {
+      margin-left : 5px;
+    }
+
+    
+    .green {
+      color : #70bf44;
+    }
+    .blue {
+      color : #7fc1ff;
+    }
+    .red {
+      color : #e74e42;
+    }
+    .yellow {
+      color : #ffc600;
+    }
+    .grey {
+      color : #adadad;
+    }
+    .black {
+      color : #000000;
+    }

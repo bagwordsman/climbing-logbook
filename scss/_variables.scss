@@ -1,0 +1,56 @@
+// Variables
+
+// colours
+$yellow : #ffc600;
+$red : #e74e42;
+$blue : #7fc1ff;
+$green : #70bf44;
+
+$grey_a : #F7F7F7;
+$grey_b : #EFEFEF;
+$grey_c : #D8D8D8;
+$grey_d : #adadad;
+// $grey : #6a6a6a; // 106, 106, 106
+
+$white : #ffffff;
+$black : #000000;
+
+
+// yellows
+$yellow_light : lighten( $yellow, 10% );
+$yellow_dark : darken( $yellow, 10% );
+
+
+
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––
+// add colour variables to :root, for use with js
+// - avoid hardcoding colour values in js
+// NOTE: can't have any whitespace after semi-colon.
+// - This adds whitespace to colour variable, making it null
+:root {
+    --yellow :#{$yellow};
+    --red :#{$red};
+    --blue :#{$blue};
+    --green :#{$green};
+}
+
+
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––
+// font families
+$font-main : 'helvetica neue', Helvetica, Arial, sans-serif;
+$font-icons : 'FontAwesome';
+
+// font weights
+$normal : 200;
+$bold : 400;
+
+
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––
+// outline, shadows, gradients
+$box_inset : 0 0 5px rgba(0, 0, 0, 0.12), inset 0 0 2px rgba(0, 0, 0, 0.19);
+$box_reg : 0 0 10px rgba(0, 0, 0, 0.14);
+
+$grad_hover : linear-gradient(to top, $white 0%,$grey_b 100%);
