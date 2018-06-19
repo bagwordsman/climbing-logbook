@@ -386,11 +386,11 @@ function moreInfo(e) {
     
     // _________________
     // style
-    // Lead (or solo) + (0/S, _, RP, rpt) = green (note that '_' is a flash)
+    // Lead (or solo) + (0/S, _, RP, rpt, x) = green (note that '_' is a flash)
     // TR + (0/S, _, G/U, RP, rpt) = blue
     // dog, dnf = red
 
-    let success = /(O\/S|_|G\/U|RP|rpt)/;
+    let success = /(O\/S|_|G\/U|RP|rpt|x)/;
     success = style.match(success);
 
     let fail = /(dog|dnf)/;
