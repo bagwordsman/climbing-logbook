@@ -14,8 +14,8 @@
     <div class="viewbox">
       <div class="list-container">
         <ul class="suggestions">
-          <li>Filter for a climb</li>
-          <li>or a crag</li>
+          <li>Search for a climb</li>
+          <li>...by entering climb or crag name</li>
         </ul>
       </div>
     </div>
@@ -101,6 +101,23 @@ function findMatches(wordToMatch, climbs) {
 
 
 
+// calendar function - used twice
+// - year is always present. When not set, it is the 2nd item in the array
+function calendarHtml(date) {
+  const noDate = date.match(/^\?/);
+  const split = date.split("/");
+  return `
+  <span class="calendar${noDate ? " not-set" : ""}">
+    <span class="month">${noDate ? `N/A` : `${split[1]}`}</span>
+    <span class="day">${noDate ? `N/A` : `${split[0]}`}</span>
+    <span class="year">${noDate ? `${split[1]}` : `20${split[2]}`}</span>
+  </span>
+  `;
+}
+
+
+
+
 
 
 
@@ -126,6 +143,9 @@ function displayMatches(){
     // add an ID to each climb - for more info on button click
     const climbDate = entry.Date;
     const climbID = climbs.indexOf(entry); // search for entry (item in 'climbs' array)
+
+    // format the date a bit nicer - use calendar function
+    // const dateHtml = calendarHtml(climbDate);
     
     return `
       <li class="searched" data-date="${climbDate}" data-id="${climbID}">
@@ -144,10 +164,12 @@ function displayMatches(){
   suggestions.innerHTML = html;
 
   // find out when input is focused. Want to make climb-info work on 1st click
-  // console.dir(searchInput);
-
+  // - think of mobile as well, can't do on mousemove only
+  // - timeout may be best
 
 }
+
+
 
 // get DOM nodes
 const searchInput = document.querySelector('.search');
@@ -160,6 +182,35 @@ searchInput.addEventListener('keyup', displayMatches);
 
 
 
+
+
+
+
+// unfocus search input - mouseout for non mobile, timeout (after focus) for mobile
+searchInput.addEventListener('mouseout', blurSearch);
+
+
+// need to unfocus search to allow one click to take you to result
+function blurSearch(){
+  searchInput.blur();
+  // console.log(searchInput);
+}
+
+
+
+
+
+
+
+// keep more-info container in view
+// - added in container function, results in jerk.
+// - probably best to do some absolute positioning
+// window.addEventListener('scroll', climbInfoOffset);
+
+// function climbInfoOffset() {
+//   const topOffset = window.pageYOffset + 10;
+//   listContainer.querySelector('.climb-info').style.marginTop = `${topOffset}px`;
+// }
 
 
 
@@ -178,26 +229,34 @@ listContainer.addEventListener("click", moreInfo);
 
 
 
+
+// expand object function
+// - allow mulitple keys to be assigned to same values - useful for grade colour banding
 function expand(obj) {
-  var keys = Object.keys(obj);
-  for (var i = 0; i < keys.length; ++i) {
-    var key = keys[i],
-    subkeys = key.split(/,\s?/),
-    target = obj[key];
+  const keys = Object.keys(obj);
+  for (const key of keys) {
+    const subkeys = key.split(/,\s?/);
+    const target = obj[key];
     delete obj[key];
-    subkeys.forEach(function(key) { obj[key] = target; })
+    subkeys.forEach(key => { obj[key] = target; })
   }
   return obj;
 }
+
+
+// add faded div if notes section is overflown
+function isOverflown(element) {
+    return element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth;
+}
+
+
+
 
 
 
 
 // switch between list and individual items - ul.suggestions and ul.climb-info
 function moreInfo(e) {
-
-  
-
 
 
   // more button
@@ -207,9 +266,8 @@ function moreInfo(e) {
   if (e.target && e.target.nodeName == "LI" && e.target.classList.contains('searched')) {
 
 
-    // Y coordinate of the clicked li won't work. Some elements will overflow bottom of page
-    // - use viewport instead
-    // console.dir(e.target.offsetTop);
+    // offset the .climb-info ul with a top margin
+    // - required for elements at the bottom of the page / when scrolled down
     const topOffset = window.pageYOffset + 10;
 
 
@@ -228,96 +286,62 @@ function moreInfo(e) {
     const notes = ascent.Notes;
     const crag = ascent.crag;
 
-
-
-    // plan:
-    // - jazz up info by parsing the content, adding colours, and different icons
+    
 
     
     // _________________
-    // grade
+    // grade - most complex parameter of the lot
     // - star count, discipline, grade band colour
-    // grade band dependent upon discipline, and grading system
-    // - can't really tell discipline from grade for roped climbs, unless in UK system
-    // - most complex parameter of the lot
+    // - grade band dependent upon discipline, and grading system
+    // - can't tell discipline from grade for roped climbs, unless in UK system
 
-    // default = black. Also E4 / 7a+ / f6B / 5.12a / n7
-    // red = E1 - E3 / 6b - 7a / f5 - f6A+ / 5.10a - 5.11d / n6
-    // yellow = HS - HVS / 5a - 6a+ / f4 - f4+ / n5
-    // green = M - S / 
+    // order:
+    // uk trad, sport / french, USA, norse, bouldering, winter, ice
 
-    // discipline
-    // - look at start of string with ^
-    // - order is of importance here - uk trad later. Try [^ with chars to exclude] alternatively
-    // - account for mixed, ice, and winter - starts with 'M', 'W', 'I' and 'V'
-    // - caution - mod and vs - mixed and winter
-
-
+    // get the grade - first word of string
+    const getGrade = grade.split(" ")[0];
     
-    //_______________________
-    // could be better to make arrays / objects of grades, then map the grade to these
-    // - regex is a pain, else if returns radically different results
-    // - something like the below could make code more maintainable
-    // - perhaps not actually, especially if I want to include discipline
+    // grade bands object
     const gradeBands = expand({
-      // black : ["E4", "E5", "E6"],
-      // red : ["E1", "E2", "E3", "6b", "6b+", "6c", "6c+", "7a"],
-      // yellow : ["HS", "VS", "HVS"],
-      // green : ["M", "D", "VD", "HVD"],
 
-      // UKTrad
-      // "D, VD, HVD, S" : {
-      //   band : 'green',
-      //   discipline : 'UKTrad'
-      // },
-      // "HS, VS, HVS" : {
-      //   band : 'yellow',
-      //   discipline : 'UKTrad'
-      // },
-      // "E1, E2, E3" : {
-      //   band : 'red',
-      //   discipline : 'UKTrad'
-      // }
-      "D, VD, HVD, S" : {
-        band : 'green'
+      "M, D, VD, HVD, S, 1, 2, 3, 4a, 4b, 4c, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, n1, n2, n3, n4, f1, f2, f2+, f3, f3+, I, II, WI-1, WI-2" : {
+        band : ' green'
+      },
+      "HS, MVS, VS, HVS, 5a, 5b, 5c, 6a, 6a+, 5.7, 5.8, 5.9, 5.10a, 5.10b, 5.10c, n5-, n5, n5+, f4, f4+, III, IV, WI-3, WI-4" : {
+        band : ' yellow'
+      },
+      "E1, E2, E3, 6b, 6b+, 6c, 6c+, 7a, 5.10d, 5.11a, 5.11b, 5.11c, 5.11d, n6-, n6, n6+ f5, f5+, f6A, f6A+, V, VI, WI-5" : {
+        band : ' red'
+      },
+      "E4, E5, E6, E7, E8, E9, E10, E11, E12, 7a+, 7b, 7b+, 7c, 7c+, 8a, 8a+, 8b, 8b+, 8c, 8c+, 9a, 9a+, 9b, 9b+, 9c, 5.12a, 5.12b, 5.12c, 5.12d, 5.13a, 5.13b, 5.13c, 5.13d, 5.14a, n7-, n7, n7+, n8-, n, n8+, f6B, f6B+, f6C, f6c+, f7A, f7A+, f7B, f7B+, f7C, f7C+, f8A, VII, VIII, IX, X, WI-6, WI-7" : {
+        band : ' black'
       }
       
     });
 
+    // disciplines object
+    // const gradeDisciplines = expand({
 
-    const gradeDisciplines = expand({
-
-      "D, VD, HVD, S" : {
-        discipline : 'UKTrad'
-      }
+    //   "M, D, VD, HVD, S, HS, MVS, VS, HVS, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12" : {
+    //     discipline : 'UK trad'
+    //   },
+    //   "1, 2, 3, 4a, 4b, 4c, 5a, 5b, 5c, 6a, 6a+, 6b, 6b+, 6c, 6c+, 7a, 7a+, 7b, 7b+, 7c, 7c+, 8a, 8a+, 8b, 8b+, 8c, 8c+, 9a, 9a+, 9b, 9b+, 9c" : {
+    //     discipline : 'French grade - usually sport'
+    //   },
+    //   "5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10a, 5.10b, 5.10c, 5.10d, 5.11a, 5.11b, 5.11c, 5.11d, 5.12a, 5.12b, 5.12c, 5.12d, 5.13a, 5.13b, 5.13c, 5.13d, 5.14a" : {
+    //     discipline : 'American grade - sport or trad'
+    //   }
       
-    });
+    // });
 
-    // This outputs info - if specific grade is entered.
-    // - will not be any less code heavy than the below
-    const gradeSplit = grade.split(" ")[0]; // first word determines the colour and discipline
-    
-    
-    console.log(gradeBands[gradeSplit].band);
-
-    console.log(gradeDisciplines[gradeSplit].discipline);
+    // grade - get colour brand from object
+    const getColour = gradeBands[getGrade].band;
+    // console.log(gradeBands[getGrade].band);
+    // console.log(gradeDisciplines[getGrade].discipline);
 
 
-    // alternative idea:
-    // - isolate/tighten up the below regexes (if only, not else if)
-    // - make regexes very specific - filter right down to a specific grade (with colour and style)
-    // - add them to an array, loop over each
-
-    // situation:
-    // - lots of specific regexes - a bit of a pain to write
-    // OR
-    // - lots of conditionals
-
-
-
+    // regex for discipline - more efficient than an object
     let discipline;
-    let colour;
-
     if (grade.match(/^W/)) {
       discipline = 'ice';
     }
@@ -330,45 +354,12 @@ function moreInfo(e) {
     else if (grade.match(/^I|V(?!S|D)/)) { // I or V if not followed by S or D
       discipline = 'winter';
     }
-    // trad
     else if (grade.match(/^[A-Z]/)) { // starts with a capital letter, comes after the above
       discipline = 'UK trad';
-      if (grade.match(/^M|D|S/)) { // Mod, Diff, Severe
-        colour = ' green';
-      } 
-      if (grade.match(/^H|V(?=VS|S)/)) { // H or V if followed by VS or S
-        colour = ' yellow';
-      }
-      if (grade.match(/HVD/g)) { // Diff divisions - need to overwrite the last if statement
-        colour = ' green';
-      }
-      if (grade.match(/^E[1-3]/)) {
-        colour = ' red';
-      }
-      if (grade.match(/^E[4-9]/)) {
-        colour = ' black';
-      }
     }
-
-
-    // sport
     else if (grade.match(/^[1-9][a-c]/)) { // starts with a number, followed by lowercase letter
       discipline = 'French grade - usually sport';
-      if (grade.match(/^[1-4]/)) {
-        colour = ' green';
-      }
-      if (grade.match(/^5|6(?=a)/)) {
-        colour = ' yellow';
-      }
-      if (grade.match(/^6(?=[b-c])|7(?=a)/)) {
-        colour = ' red';
-      }
-      if (grade.match(/7a\+|^7(?=[b-c])|[8-9]/)) {
-        colour = ' black';
-      }
     }
-
-    // USA
     else if (grade.match(/^5/)) { // starts with a 5
       discipline = 'American grade - sport or trad';
     }
@@ -378,7 +369,7 @@ function moreInfo(e) {
 
     // stars: swap * for fa-star
     const withStars = grade.replace(/\*/g,"<i class='fa fa-star yellow margin-left'></i>");
-    const gradeHtml = `<li class="grade"><i class="fa fa-circle${colour}"></i>${withStars}</li>`;
+    const gradeHtml = `<li class="grade"><i class="fa fa-circle${getColour}"></i>${withStars}</li>`;
 
     // discipline
     const disciplineHtml = `<li class="discipline"><i class="fa fa-chevron-right"></i>${discipline}</li>`;
@@ -431,7 +422,12 @@ function moreInfo(e) {
 
     // beta: swap _ from data for β
     const withBeta = style.replace(/_/g,"β (flash)");
-    const styleHtml = `<li class="style${styleColour}"><i class="fa${styleIcon}"></i>${withBeta} ${styleUnset !== undefined ? `${styleUnset}` : ""}</li>`;
+    const styleHtml = `
+    <li class="style${styleColour}">
+      <i class="fa${styleIcon}"></i>
+      ${withBeta} ${styleUnset !== undefined ? `${styleUnset}` : ""}
+    </li>
+    `;
 
 
 
@@ -439,22 +435,34 @@ function moreInfo(e) {
     // partner(s)
     // if string contains a comma. Will break if partner's name does not contain a comma for some reason.
     const partnerPlural = partners.includes(',');
-    const partnerHtml = `<li class="partners"><i class="fa fa-user${partnerPlural == false ? "" : "s"}"></i>${partners}</li>`;
+    const partnerHtml = `
+    ${partners.length > 0 ? `
+    <li class="partners">
+      <i class="fa fa-user${partnerPlural == false ? "" : "s"}"></i>
+      ${partners}
+    </li>
+    `: ""}
+    `;
 
 
     // _________________
     // notes
-    const notesHtml = `<li class="notes${notes ? "" : " no-notes"}"><i class="fa fa-edit"></i>${notes ? ascent.Notes : "No notes contributed for this climb"}</li>`;
+    // - if notes overflow, add an overlay with linear gradient to fade out
+    const notesHtml = `
+    <li class="notes${notes ? "" : " no-notes"}">
+      <i class="fa fa-edit"></i>${notes ? ascent.Notes : "No notes contributed for this climb"}
+    </li>`;
 
 
-
+    // calendar thing
+    const dateHtml = calendarHtml(date);
     
-    
+    // add top margin to hold position in the list. Subtract height of searchbar
     const html = `
     <ul class="climb-info"${topOffset > 10 ? ` style="margin-top:${topOffset}px;"` : ""}>
       <li class="title">
         <span class="date back">
-          ${date}
+          ${dateHtml}
           <i class="fa fa-chevron-left"></i>
         </span>
         ${name}
@@ -468,11 +476,21 @@ function moreInfo(e) {
     </ul>
     `;
 
-    // console.log(notes);
-
     listContainer.insertAdjacentHTML('beforeend', html);
     listContainer.classList.add('slide-left');
     suggestions.classList.add('shadow-off');
+
+    // keep position of climb-info (prevent scroll)
+    document.body.classList.add('fixed');
+
+
+    // overflow fade - need to refine this
+    const notesLi = listContainer.querySelector('.notes');
+    const notesFade = isOverflown(notesLi);
+    if (notesFade == true) {
+      notesLi.classList.add('overflow');
+    }
+
 
   }
 
@@ -506,6 +524,7 @@ function moreInfo(e) {
     time = parseFloat(time)*1000;
     setTimeout(function(){
       listContainer.querySelector('.climb-info').remove();
+      document.body.classList.remove('fixed');
     }, time);
 
 

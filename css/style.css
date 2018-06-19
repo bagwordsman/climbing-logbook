@@ -5,6 +5,10 @@
       font-size: 20px;
       font-weight: 200;
     }
+    /* add a reset later */
+    body {
+      margin : 0;
+    }
     *, *:before, *:after {
       box-sizing: inherit;
     }
@@ -13,38 +17,93 @@
       padding:20px;
     }
 
+
+    /* form */
     .search-form {
-      max-width:400px;
-      margin:50px auto;
+      max-width : 100vw;
+      margin-bottom : 10px;
+    }
+    @media (min-width: 550px) {
+      .search-form {
+        max-width:400px;
+        margin:50px auto;
+      }
     }
 
+
+
+
+    /* search bar */
     input.search {
-      margin: 0;
-      text-align: center;
-      outline:0;
-      border: 10px solid #F7F7F7;
-      width: 120%;
-      left: -10%;
-      position: relative;
-      top: 10px;
-      z-index: 2;
-      border-radius: 5px;
-      font-size: 40px;
-      box-shadow: 0 0 5px rgba(0, 0, 0, 0.12), inset 0 0 2px rgba(0, 0, 0, 0.19);
+      margin : 2.5vh 2.5vw 0;
+      width : 95vw;
+      text-align : center;
+      outline : 0;
+      border : 10px solid #F7F7F7;
+      position : relative;
+      top : 10px;
+      z-index : 2;
+      border-radius : 5px;
+      font-size : 40px;
+      box-shadow : 0 0 5px rgba(0, 0, 0, 0.12), inset 0 0 2px rgba(0, 0, 0, 0.19);
+    }
+
+    @media (min-width: 550px) {
+      input.search {
+        margin : 0;
+        width: 120%;
+        left: -10%;
+      }
+    }
+
+
+    /* view mechanics */
+    .viewbox {
+      overflow : hidden;
+      max-width : 90vw;
+      margin : 0 auto;
+    }
+    @media (min-width: 550px) {
+      .viewbox {
+        max-width : 100%;
+      }
+    }
+
+
+    .list-container {
+      display : flex;
+      flex-direction : row;
+      width : 180vw;
+      transform : translateX(0%);
+      transition : 0.5s;
+    }
+    @media (min-width: 550px) {
+      .list-container {
+        width : 800px;
+      }
     }
 
 
     
 
 
+    /* lists */
     .suggestions,
     .climb-info {
-      width:100%;
-      max-width:400px;
-      margin: 10px 0 0;
-      padding: 0;
-      position: relative;
+      width : 100%;
+      max-width : 90vw;
+      margin : 10px 0 0;
+      padding : 0;
+      position : relative;
     }
+    @media (min-width: 550px) {
+      .suggestions,
+      .climb-info {
+        max-width : 400px;
+      }
+    }
+
+
     .suggestions li {
       background:white;
       list-style: none;
@@ -55,13 +114,15 @@
       transition: background 0.2s;
       display:flex;
       justify-content:space-between;
-      text-transform: capitalize;
+      /* text-transform: capitalize; */
       position : relative;
     }
 
     /* after search */
     .suggestions li.searched {
-      padding-left:109px;
+      padding-left : 109px;
+      padding-top : 25px;
+      padding-bottom : 25px;
       cursor : pointer;
       transition : linear-gradient 0.5s;
     }
@@ -93,9 +154,70 @@
       font-size : 15px;
       cursor:pointer;
       pointer-events:auto;
+      overflow : hidden;
     }
 
 
+    /* calendar */
+    .calendar {
+      display : flex;
+      flex-direction: column;
+      text-align : center;
+      transform : rotate(-3.5deg);
+    }
+    .calendar > span {
+      padding : 3px 2px;
+      transition : all .5s;
+    }
+    .calendar > span:hover {
+      transform : scale(1.35) rotate(3.5deg);
+      font-size : 100%;
+    }
+    /* spread parts out */ 
+    .calendar > span:hover + span {
+      transform : translateY(15px);
+    }
+    .calendar > span:hover + span + span {
+      transform : translateY(30px);
+    }
+
+
+
+    .month {
+      background-color : #e74e42;
+      color : white;
+      font-size : 9px;
+    }
+    .day {
+      background-color : white;
+    }
+    .year {
+      background-color : #adadad;
+      font-size : 9px;
+    }
+
+    .not-set {
+      /* opacity : .5; */
+      filter : grayscale(50%);
+    }
+
+    /* .not-set .month {
+      background-color : rgba(238, 71, 66, .5);
+    }
+    .not-set .day {
+      background-color : rgba(255, 255, 255, .5);
+    }
+    .not-set .year {
+      background-color : rgba(173, 173, 173, .5);
+    } */
+    
+
+
+    
+    
+    
+    
+    
     /* highlights */
     .hl {
       background:#ffc600;
@@ -104,17 +226,7 @@
 
 
 
-    /* view mechanics */
-    .viewbox {
-      overflow:hidden;
-    }
-    .list-container {
-      display:flex;
-      flex-direction:row;
-      width:800px;
-      transform: translateX(0%);
-      transition: 0.5s;
-    }
+    
 
 
 
@@ -153,20 +265,28 @@
       border-bottom : 2px solid;
     }
     /* icons */
-    .climb-info li > .fa:first-child {
+    .climb-info li .fa:first-child {
       margin-right : 10px;
     }
-    .climb-info li.notes {
+    /* .climb-info li.notes */
+    .climb-info .notes {
       margin : 20px 0;
       padding : 10px 0;
       border-top : 2px solid;
       border-bottom : 2px solid;
       font-size : 17px;
       line-height : 1.35;
+      max-height : 250px;
+      overflow-y : scroll;
+      position : relative;
     }
-    .climb-info li.notes .fa {
+    .climb-info .notes .fa {
       font-size : 20px;  
     }
+    .climb-info .notes.overflow {
+      background : linear-gradient( rgba(255,255,255,0) 90% , rgba(55,120,255,.3)  );
+    }
+
 
 
 
@@ -198,7 +318,16 @@
       margin-left : 5px;
     }
 
+    .fixed {
+      overflow-y : hidden;
+    }
+
     
+
+
+
+
+
     .green {
       color : #70bf44;
     }
