@@ -1,0 +1,258 @@
+// main logbook css
+
+html {
+    background : $yellow;
+}
+
+
+
+// main form
+.search-form {
+    max-width : 100vw;
+    margin-bottom : 10px;
+    @media (min-width: 550px) {
+        max-width:400px;
+        margin : 50px auto;
+    }
+}
+
+
+// searchbar
+input {
+    width : 100%;
+    padding : 20px;
+
+    &.search {
+        margin : 2.5vh 2.5vw 0;
+        width : 95vw;
+        text-align : center;
+        outline : 0;
+        border : 10px solid $grey_a;
+        position : relative;
+        top : 10px;
+        z-index : 2;
+        border-radius : 5px;
+        font-size : 4rem;
+        font-weight : 400;
+        box-shadow : $box_inset;
+        @media (min-width: 550px) {
+            margin : 0;
+            width : 120%;
+            left : -10%;
+        }
+    }
+}
+
+
+// view mechanics
+.viewbox {
+    overflow : hidden;
+    max-width : 90vw;
+    margin : 0 auto;
+    @media (min-width: 550px) {
+        max-width : 100%;
+    }
+}
+
+
+// ul container
+.list-container {
+    display : flex;
+    flex-direction : row;
+    width : 180vw;
+    // transform : translateX(0%);
+    transition : 0.5s;
+    @media (min-width: 550px) {
+        width : 800px;
+    }
+}
+
+
+// uls
+.suggestions,
+.climb-info {
+    width : 100%;
+    max-width : 90vw;
+    margin : 10px 0 0;
+    padding : 0;
+    position : relative;
+    @media (min-width: 550px) {
+        max-width : 400px;
+    }
+}
+
+
+
+
+// suggestions list items
+.suggestions li {
+    background : $white;
+    list-style : none;
+    border-bottom : 1px solid $grey_c;
+    box-shadow : $box_reg;
+    margin : 0;
+    padding : 20px;
+    transition : background 0.2s;
+    display : flex;
+    justify-content : space-between;
+    position : relative;
+    
+    // after search
+    &.searched {
+        padding-left : 109px;
+        padding-top : 25px;
+        padding-bottom : 25px;
+        cursor : pointer;
+        transition : linear-gradient 0.5s;
+        > span {
+            pointer-events : none;
+        }
+        .fa {
+            transition : translateX 0.5s; // right arrow
+        }
+    }
+    // after searched: hover
+    &.searched:hover {
+        background : $grad_hover;
+        .fa {
+            transform : translateX(5px); // right arrow
+        }
+    }
+}
+
+
+
+
+
+// date span - used on both lists, not specific to suggestions
+span.date {
+    position : absolute;
+    top : 0;
+    left : 0;
+    bottom : 0;
+    padding : 10px;
+    width : 90px;
+    background : $grey_c;
+    color : $black;
+    font-size : 1.5rem;
+    cursor : pointer;
+    pointer-events : auto;
+    overflow : hidden;
+}
+
+
+// calendar - within .date
+.calendar {
+    display : flex;
+    flex-direction: column;
+    text-align : center;
+    transform : rotate(-3.5deg);
+    // month, day, year
+    > span {
+        padding : 3px 2px;
+        transition : all .5s;
+        &:hover {
+            transform : scale(1.35) rotate(3.5deg);
+            font-size : 100%;
+        }
+        // spread parts out
+        &:hover + span {
+            transform : translateY(15px);
+        }
+        &:hover + span + span {
+            transform : translateY(30px);
+        }
+    }
+}
+// month, day, year
+.month {
+    background-color : $red;
+    color : $white;
+    font-size : 1rem;
+}
+.day {
+    background-color : $white;
+    font-size : 1.5rem;
+}
+.year {
+    background-color : $grey_d;
+    font-size : 1rem;
+}
+
+
+
+
+
+
+
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––
+// climb info view
+
+// climb container
+.climb-info {
+    background : $white;
+    list-style : none;
+    border-bottom : 1px solid $grey_c;
+    box-shadow : $box_reg;
+    padding : 20px;
+    padding-left : 109px;
+    align-self : flex-start;
+}
+
+
+// list items - each data property
+.climb-info li {
+    list-style : none;
+    margin-bottom : 5px;
+    // icons
+    .fa:first-child {
+        margin-right : 10px;
+    }
+
+    // title - with grey back button
+    &.title {
+
+        // plain title
+        &:not(.back){
+            font-size : 2.5rem;
+            text-align : center;
+            margin-bottom : 20px;
+            padding-bottom : 10px;
+            border-bottom : 2px solid;
+        }
+        
+        // back button + date
+        .back {
+            cursor : pointer;
+        }
+        .fa {
+            position : absolute;
+            top : calc(50% - 10px);
+            left : calc(50% - 10px);
+            pointer-events : none;
+        }
+
+    }
+
+    // notes
+    &.notes {
+        margin : 20px 0;
+        padding : 10px 0;
+        border-top : 2px solid;
+        border-bottom : 2px solid;
+        // font-size : 17px;
+        font-size : 1.7rem;
+        line-height : 1.35;
+        max-height : 250px;
+        overflow-y : scroll;
+        position : relative;
+        .fa {
+            // font-size : 20px;  
+            font-size : 1.6rem;
+        }
+        &.overflow {
+            background : $grad_blue;
+        }
+    }
+}

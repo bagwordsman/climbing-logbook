@@ -20,6 +20,10 @@ $black : #000000;
 $yellow_light : lighten( $yellow, 10% );
 $yellow_dark : darken( $yellow, 10% );
 
+// blues
+$blue_light : lighten( $blue, 10% );
+$blue_dark : darken( $blue, 10% );
+
 
 
 
@@ -54,3 +58,4 @@ $box_inset : 0 0 5px rgba(0, 0, 0, 0.12), inset 0 0 2px rgba(0, 0, 0, 0.19);
 $box_reg : 0 0 10px rgba(0, 0, 0, 0.14);
 
 $grad_hover : linear-gradient(to top, $white 0%,$grey_b 100%);
+$grad_blue : linear-gradient(rgba(255, 255, 255, 0) 90%, rgba(55, 120, 255, .3) );
