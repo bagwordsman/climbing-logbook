@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Logbook</title>
   <link rel="stylesheet" href="css/logbook.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+
 </head>
 <body>
 
@@ -20,6 +21,7 @@
       </div>
     </div>
   </form>
+
 
 
 
@@ -181,6 +183,11 @@ searchInput.addEventListener('change', displayMatches);
 searchInput.addEventListener('keyup', displayMatches);
 
 
+// a way to add event listener to mulitple elements of the same type
+// - may not apply here - elements are delegated
+// skipButtons.forEach(button => button.addEventListener('click', skip));
+
+
 
 
 
@@ -256,6 +263,7 @@ function isOverflown(element) {
 
 
 // switch between list and individual items - ul.suggestions and ul.climb-info
+// - forward and back
 function moreInfo(e) {
 
 
@@ -268,7 +276,7 @@ function moreInfo(e) {
 
     // offset the .climb-info ul with a top margin
     // - required for elements at the bottom of the page / when scrolled down
-    const topOffset = window.pageYOffset + 10;
+    const topOffset = (window.pageYOffset + 10).toString();
 
 
     // get the ID (convert to numeric)
@@ -369,10 +377,10 @@ function moreInfo(e) {
 
     // stars: swap * for fa-star
     const withStars = grade.replace(/\*/g,"<i class='fa fa-star yellow margin-left'></i>");
-    const gradeHtml = `<li class="grade"><i class="fa fa-circle${getColour}"></i>${withStars}</li>`;
+    const gradeHtml = `<div class="grade"><i class="fa fa-circle${getColour}"></i>${withStars}</div>`;
 
     // discipline
-    const disciplineHtml = `<li class="discipline"><i class="fa fa-chevron-right"></i>${discipline}</li>`;
+    const disciplineHtml = `<div class="discipline"><i class="fa fa-chevron-right"></i>${discipline}</div>`;
 
 
 
@@ -423,10 +431,10 @@ function moreInfo(e) {
     // beta: swap _ from data for β
     const withBeta = style.replace(/_/g,"β (flash)");
     const styleHtml = `
-    <li class="style${styleColour}">
+    <div class="style${styleColour}">
       <i class="fa${styleIcon}"></i>
       ${withBeta} ${styleUnset !== undefined ? `${styleUnset}` : ""}
-    </li>
+    </div>
     `;
 
 
@@ -437,10 +445,10 @@ function moreInfo(e) {
     const partnerPlural = partners.includes(',');
     const partnerHtml = `
     ${partners.length > 0 ? `
-    <li class="partners">
+    <div class="partners">
       <i class="fa fa-user${partnerPlural == false ? "" : "s"}"></i>
       ${partners}
-    </li>
+    </div>
     `: ""}
     `;
 
@@ -449,30 +457,33 @@ function moreInfo(e) {
     // notes
     // - if notes overflow, add an overlay with linear gradient to fade out
     const notesHtml = `
-    <li class="notes${notes ? "" : " no-notes"}">
+    <div class="notes${notes ? "" : " no-notes"}">
       <i class="fa fa-edit"></i>${notes ? ascent.Notes : "No notes contributed for this climb"}
-    </li>`;
+    </div>`;
 
 
     // calendar thing
-    const dateHtml = calendarHtml(date);
+    const calDate = calendarHtml(date);
+    const dateHtml = `<div class="date">${calDate}</div>`;
     
     // add top margin to hold position in the list. Subtract height of searchbar
     const html = `
     <ul class="climb-info"${topOffset > 10 ? ` style="margin-top:${topOffset}px;"` : ""}>
-      <li class="title">
-        <span class="date back">
+      <li>
+        <div class="back">
           ${dateHtml}
           <i class="fa fa-chevron-left"></i>
-        </span>
-        ${name}
+        </div>
+        <div class="climb-details">
+          <div class="title">${name}</div>
+          ${gradeHtml}
+          ${disciplineHtml}
+          ${styleHtml}
+          ${partnerHtml}
+          ${notesHtml}
+          <div class="crag"><i class="fa fa-map-marker red"></i>${crag}</div>
+        </div>
       </li>
-      ${gradeHtml}
-      ${disciplineHtml}
-      ${styleHtml}
-      ${partnerHtml}
-      ${notesHtml}
-      <li class="crag"><i class="fa fa-map-marker red"></i>${crag}</li>
     </ul>
     `;
 
@@ -482,6 +493,11 @@ function moreInfo(e) {
 
     // keep position of climb-info (prevent scroll)
     document.body.classList.add('fixed');
+
+    // search bar
+    searchInput.setAttribute("style", `top:${topOffset}px;`); // set offset
+    searchInput.disabled = true; // disable input
+
 
 
     // overflow fade - need to refine this
@@ -509,12 +525,15 @@ function moreInfo(e) {
   // back button
 
   // target back button / icon
-  if (e.target && e.target.nodeName == "SPAN" && e.target.classList.contains('back')) {
-    
+  if (e.target && e.target.nodeName == "DIV" && e.target.classList.contains('back')) {
+
     // slide right
     listContainer.classList.remove('slide-left');
     // add default shadow back to .suggestions
     suggestions.classList.remove('shadow-off');
+    // searchbar
+    searchInput.setAttribute('style', 'top:10px;'); // position searchbar at top
+    searchInput.disabled = false; // enable input
 
     // remove climb info ul
     // - take delay value from css (transition on list container = 0.5s)
@@ -533,6 +552,17 @@ function moreInfo(e) {
 
 }
 
+
+
+
+
+// image search test
+// const imageSearch = require('node_modules/node-google-image-search-promise');
+
+// imageSearch('<search-term>', 0, 5)
+//   .then(results => {
+//     // do something...
+//   });
 
 
 

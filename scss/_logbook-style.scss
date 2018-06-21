@@ -12,7 +12,7 @@ html {
     margin-bottom : 10px;
     @media (min-width: 550px) {
         max-width:400px;
-        margin : 50px auto;
+        margin : 20px auto;
     }
 }
 
@@ -32,14 +32,21 @@ input {
         top : 10px;
         z-index : 2;
         border-radius : 5px;
-        font-size : 4rem;
+        font-size : 3rem;
         font-weight : 400;
         box-shadow : $box_inset;
+        transition : 1s; // slide searchbar down on view change
         @media (min-width: 550px) {
             margin : 0;
             width : 120%;
             left : -10%;
+            font-size : 4rem;
         }
+    }
+
+    &:disabled {
+        color : $grey_d;
+        background-color : $grey_c;
     }
 }
 
@@ -86,26 +93,49 @@ input {
 
 // suggestions list items
 .suggestions li {
-    background : $white;
-    list-style : none;
-    border-bottom : 1px solid $grey_c;
-    box-shadow : $box_reg;
+    display : flex;
+    align-items : stretch;
+    // justify-content : space-between;
+    // position : relative;
+
     margin : 0;
     padding : 20px;
+
+    list-style : none;
+    background : $white;
+    border-bottom : 1px solid $grey_c;
+    box-shadow : $box_reg;
     transition : background 0.2s;
-    display : flex;
-    justify-content : space-between;
-    position : relative;
     
     // after search
     &.searched {
-        padding-left : 109px;
-        padding-top : 25px;
-        padding-bottom : 25px;
+        padding : 0;
+        // padding-left : 109px;
+        // padding-top : 25px;
+        // padding-bottom : 25px;
         cursor : pointer;
         transition : linear-gradient 0.5s;
         > span {
             pointer-events : none;
+            padding : 20px 10px;
+            &.date,
+            &.more {
+                display : flex;
+                align-items : center;
+                justify-content : center;
+            }
+            &.date {
+                flex-basis : 25%;
+                background : $grey_c;
+                color : $black;
+                font-size : 1.5rem;
+            }
+            &.name {
+                flex-basis : 65%;
+            }
+            &.more {
+                flex-basis : 10%;
+            }
         }
         .fa {
             transition : translateX 0.5s; // right arrow
@@ -124,24 +154,9 @@ input {
 
 
 
-// date span - used on both lists, not specific to suggestions
-span.date {
-    position : absolute;
-    top : 0;
-    left : 0;
-    bottom : 0;
-    padding : 10px;
-    width : 90px;
-    background : $grey_c;
-    color : $black;
-    font-size : 1.5rem;
-    cursor : pointer;
-    pointer-events : auto;
-    overflow : hidden;
-}
-
 
 // calendar - within .date
+// - can be used in both lists, needs to be independent
 .calendar {
     display : flex;
     flex-direction: column;
@@ -190,53 +205,71 @@ span.date {
 // climb info view
 
 // climb container
+// - make this similar to the above - removing absolute positioning
 .climb-info {
+    align-self : flex-start; // stop from being realy high
     background : $white;
     list-style : none;
     border-bottom : 1px solid $grey_c;
     box-shadow : $box_reg;
-    padding : 20px;
-    padding-left : 109px;
-    align-self : flex-start;
 }
 
 
 // list items - each data property
 .climb-info li {
     list-style : none;
-    margin-bottom : 5px;
-    // icons
-    .fa:first-child {
-        margin-right : 10px;
-    }
+    display : flex;
+    align-items : stretch;
 
-    // title - with grey back button
-    &.title {
-
-        // plain title
-        &:not(.back){
-            font-size : 2.5rem;
-            text-align : center;
-            margin-bottom : 20px;
-            padding-bottom : 10px;
-            border-bottom : 2px solid;
-        }
-        
-        // back button + date
-        .back {
-            cursor : pointer;
-        }
+    // grey back button
+    .back {
+        display : flex;
+        justify-content : center;
+        flex-basis : 25%;
+        position : relative;
+        padding : 10px;
+        background : $grey_c;
+        color : $black;
+        font-size : 1.5rem;
+        cursor : pointer;
+        pointer-events : all;
+        overflow : hidden; // contain calendar
         .fa {
             position : absolute;
             top : calc(50% - 10px);
             left : calc(50% - 10px);
             pointer-events : none;
         }
-
+        // calendar container
+        .date {
+            width : 100%;
+            pointer-events : none;
+        }
     }
 
-    // notes
-    &.notes {
+    // details column
+    .climb-details {
+        display : flex;
+        flex-basis : 75%;
+        flex-direction : column;
+        padding : 20px;
+        // icons
+        .fa:first-child {
+            margin-right : 10px;
+        }
+    }
+
+
+    // within climb details
+    .title {
+        font-size : 2.5rem;
+        text-align : center;
+        margin-bottom : 20px;
+        padding-bottom : 10px;
+        border-bottom : 2px solid;
+    }
+
+    .notes {
         margin : 20px 0;
         padding : 10px 0;
         border-top : 2px solid;
@@ -244,7 +277,7 @@ span.date {
         // font-size : 17px;
         font-size : 1.7rem;
         line-height : 1.35;
-        max-height : 250px;
+        max-height : 150px;
         overflow-y : scroll;
         position : relative;
         .fa {
@@ -253,6 +286,13 @@ span.date {
         }
         &.overflow {
             background : $grad_blue;
+            // position : relative;
+            // font-family : $font-icons;
+            // &:after {
+            //     content : "\f078";
+            //     position : absolute;
+
+            // }
         }
     }
 }

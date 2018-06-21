@@ -2418,6 +2418,7 @@ html {
 
 body {
   font-size: 1.6em;
+  font-size: 1.8rem;
   line-height: 1.6;
   font-weight: 200;
   font-family: "helvetica neue", Helvetica, Arial, sans-serif;
@@ -2535,7 +2536,7 @@ html {
   @media (min-width: 550px) {
     .search-form {
       max-width: 400px;
-      margin: 50px auto; } }
+      margin: 20px auto; } }
 
 input {
   width: 100%;
@@ -2550,14 +2551,19 @@ input {
     top: 10px;
     z-index: 2;
     border-radius: 5px;
-    font-size: 4rem;
+    font-size: 3rem;
     font-weight: 400;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.12), inset 0 0 2px rgba(0, 0, 0, 0.19); }
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.12), inset 0 0 2px rgba(0, 0, 0, 0.19);
+    transition: 1s; }
     @media (min-width: 550px) {
       input.search {
         margin: 0;
         width: 120%;
-        left: -10%; } }
+        left: -10%;
+        font-size: 4rem; } }
+  input:disabled {
+    color: #adadad;
+    background-color: #D8D8D8; }
 
 .viewbox {
   overflow: hidden;
@@ -2589,44 +2595,41 @@ input {
       max-width: 400px; } }
 
 .suggestions li {
-  background: #ffffff;
-  list-style: none;
-  border-bottom: 1px solid #D8D8D8;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.14);
+  display: flex;
+  align-items: stretch;
   margin: 0;
   padding: 20px;
-  transition: background 0.2s;
-  display: flex;
-  justify-content: space-between;
-  position: relative; }
+  list-style: none;
+  background: #ffffff;
+  border-bottom: 1px solid #D8D8D8;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.14);
+  transition: background 0.2s; }
   .suggestions li.searched {
-    padding-left: 109px;
-    padding-top: 25px;
-    padding-bottom: 25px;
+    padding: 0;
     cursor: pointer;
     transition: linear-gradient 0.5s; }
     .suggestions li.searched > span {
-      pointer-events: none; }
+      pointer-events: none;
+      padding: 20px 10px; }
+      .suggestions li.searched > span.date, .suggestions li.searched > span.more {
+        display: flex;
+        align-items: center;
+        justify-content: center; }
+      .suggestions li.searched > span.date {
+        flex-basis: 25%;
+        background: #D8D8D8;
+        color: #000000;
+        font-size: 1.5rem; }
+      .suggestions li.searched > span.name {
+        flex-basis: 65%; }
+      .suggestions li.searched > span.more {
+        flex-basis: 10%; }
     .suggestions li.searched .fa {
       transition: translateX 0.5s; }
   .suggestions li.searched:hover {
     background: linear-gradient(to top, #ffffff 0%, #EFEFEF 100%); }
     .suggestions li.searched:hover .fa {
       transform: translateX(5px); }
-
-span.date {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  padding: 10px;
-  width: 90px;
-  background: #D8D8D8;
-  color: #000000;
-  font-size: 1.5rem;
-  cursor: pointer;
-  pointer-events: auto;
-  overflow: hidden; }
 
 .calendar {
   display: flex;
@@ -2658,47 +2661,62 @@ span.date {
   font-size: 1rem; }
 
 .climb-info {
+  align-self: flex-start;
   background: #ffffff;
   list-style: none;
   border-bottom: 1px solid #D8D8D8;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.14);
-  padding: 20px;
-  padding-left: 109px;
-  align-self: flex-start; }
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.14); }
 
 .climb-info li {
   list-style: none;
-  margin-bottom: 5px; }
-  .climb-info li .fa:first-child {
-    margin-right: 10px; }
-  .climb-info li.title:not(.back) {
+  display: flex;
+  align-items: stretch; }
+  .climb-info li .back {
+    display: flex;
+    justify-content: center;
+    flex-basis: 25%;
+    position: relative;
+    padding: 10px;
+    background: #D8D8D8;
+    color: #000000;
+    font-size: 1.5rem;
+    cursor: pointer;
+    pointer-events: all;
+    overflow: hidden; }
+    .climb-info li .back .fa {
+      position: absolute;
+      top: calc(50% - 10px);
+      left: calc(50% - 10px);
+      pointer-events: none; }
+    .climb-info li .back .date {
+      width: 100%;
+      pointer-events: none; }
+  .climb-info li .climb-details {
+    display: flex;
+    flex-basis: 75%;
+    flex-direction: column;
+    padding: 20px; }
+    .climb-info li .climb-details .fa:first-child {
+      margin-right: 10px; }
+  .climb-info li .title {
     font-size: 2.5rem;
     text-align: center;
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid; }
-  .climb-info li.title .back {
-    cursor: pointer; }
-  .climb-info li.title .fa {
-    position: absolute;
-    top: calc(50% - 10px);
-    left: calc(50% - 10px);
-    pointer-events: none; }
-  .climb-info li.notes {
+  .climb-info li .notes {
     margin: 20px 0;
     padding: 10px 0;
     border-top: 2px solid;
     border-bottom: 2px solid;
     font-size: 1.7rem;
     line-height: 1.35;
-    max-height: 250px;
+    max-height: 150px;
     overflow-y: scroll;
     position: relative; }
-    .climb-info li.notes .fa {
+    .climb-info li .notes .fa {
       font-size: 1.6rem; }
-    .climb-info li.notes.overflow {
+    .climb-info li .notes.overflow {
       background: linear-gradient(rgba(255, 255, 255, 0) 90%, rgba(55, 120, 255, 0.3)); }
-
-/* .climb-info li.notes */
 
 /*# sourceMappingURL=logbook.css.map */
