@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Logbook</title>
   <link rel="stylesheet" href="css/logbook.css">
-  <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
 
 </head>
 <body>
@@ -15,8 +14,7 @@
     <div class="viewbox">
       <div class="list-container">
         <ul class="suggestions">
-          <li>Search for a climb</li>
-          <li>...by entering climb or crag name</li>
+          <li><i class="fa fa-chevron-right"></i>Enter climb or crag name to search</li>
         </ul>
       </div>
     </div>
@@ -430,12 +428,7 @@ function moreInfo(e) {
 
     // beta: swap _ from data for β
     const withBeta = style.replace(/_/g,"β (flash)");
-    const styleHtml = `
-    <div class="style${styleColour}">
-      <i class="fa${styleIcon}"></i>
-      ${withBeta} ${styleUnset !== undefined ? `${styleUnset}` : ""}
-    </div>
-    `;
+    const styleHtml = `<div class="style${styleColour}"><i class="fa${styleIcon}"></i>${withBeta} ${styleUnset !== undefined ? `${styleUnset}` : ""}</div>`;
 
 
 
@@ -443,14 +436,7 @@ function moreInfo(e) {
     // partner(s)
     // if string contains a comma. Will break if partner's name does not contain a comma for some reason.
     const partnerPlural = partners.includes(',');
-    const partnerHtml = `
-    ${partners.length > 0 ? `
-    <div class="partners">
-      <i class="fa fa-user${partnerPlural == false ? "" : "s"}"></i>
-      ${partners}
-    </div>
-    `: ""}
-    `;
+    const partnerHtml = `${partners.length > 0 ? `<div class="partners"><i class="fa fa-user${partnerPlural == false ? "" : "s"}"></i>${partners}</div>`: ""}`;
 
 
     // _________________
@@ -458,7 +444,7 @@ function moreInfo(e) {
     // - if notes overflow, add an overlay with linear gradient to fade out
     const notesHtml = `
     <div class="notes${notes ? "" : " no-notes"}">
-      <i class="fa fa-edit"></i>${notes ? ascent.Notes : "No notes contributed for this climb"}
+    <i class="fa fa-edit"></i>${notes ? ascent.Notes : "No notes contributed for this climb"}
     </div>`;
 
 
@@ -475,6 +461,7 @@ function moreInfo(e) {
           <i class="fa fa-chevron-left"></i>
         </div>
         <div class="climb-details">
+          <div class="settings"><i class="fa fa-cog" title="save details"></i></div>
           <div class="title">${name}</div>
           ${gradeHtml}
           ${disciplineHtml}
@@ -500,11 +487,17 @@ function moreInfo(e) {
 
 
 
-    // overflow fade - need to refine this
+    // notes
+    // - happens after noesHtml is added to DOM
+    // - need to evaluate if text overflows after it has been added to the DOM
     const notesLi = listContainer.querySelector('.notes');
-    const notesFade = isOverflown(notesLi);
-    if (notesFade == true) {
+
+    if (isOverflown(notesLi) == true) {
+
       notesLi.classList.add('overflow');
+      const tallContent = `<i class="fa fa-edit"></i><div>${notesLi.textContent}</div><div class="fade-out"><i class="fa fa-chevron-down"></i></div>`;
+      notesLi.innerHTML = "";
+      notesLi.insertAdjacentHTML('beforeend', tallContent);
     }
 
 

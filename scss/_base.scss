@@ -13,8 +13,8 @@ html {
 }
 body {
     font-size: 1.6em; // currently ems cause chrome bug misinterpreting rems on body element
-    font-size : 1.8rem;
-    line-height: 1.6;
+    font-size : 1.6rem;
+    line-height: 1.4;
     font-weight: $normal;
     font-family: $font-main;
     color: $black;
@@ -53,14 +53,18 @@ p { margin: 0; }
 em { font-style:italic; }
 
 
+@media (min-width: 550px) {
+    font-size : 1.8rem;
+    line-height: 1.6;
+}
 
 // make text larger for larger screens
 @media (min-width: 660px) {
-    body { font-size: 2rem; }
-    h1 { font-size: 3.6rem; }
-    h2 { font-size: 3.0rem; }
-    h3 { font-size: 2.7rem; }
-    h4 { font-size: 2.4rem; }
+    body { font-size: 1.9rem; }
+    // h1 { font-size: 3.6rem; }
+    // h2 { font-size: 3.0rem; }
+    // h3 { font-size: 2.7rem; }
+    // h4 { font-size: 2.4rem; }
 }
 
 
