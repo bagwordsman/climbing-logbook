@@ -17,12 +17,24 @@ $black : #000000;
 
 
 // yellows
+$yellow_lighter : lighten( $yellow, 15% );
 $yellow_light : lighten( $yellow, 10% );
 $yellow_dark : darken( $yellow, 10% );
 
 // blues
+$blue_lighter : lighten( $blue, 15% );
 $blue_light : lighten( $blue, 10% );
 $blue_dark : darken( $blue, 10% );
+
+// greens
+$green_lighter : lighten( $green, 15% );
+$green_light : lighten( $green, 10% );
+$green_dark : darken( $green, 10% );
+
+// reds
+$red_lighter : lighten( $red, 15% );
+$red_light : lighten( $red, 10% );
+$red_dark : darken( $red, 10% );
 
 
 
@@ -60,3 +72,118 @@ $box_reg : 0 0 10px rgba(0, 0, 0, 0.14);
 $grad_hover : linear-gradient(to top, $white 0%,$grey_b 100%);
 // $grad_blue : linear-gradient(rgba(255, 255, 255, 0) 0%, rgba(55, 120, 255, .3) );
 $grad_blue : linear-gradient(rgba($white, 0)  0%, rgba($blue, .5) );
+
+
+
+
+
+
+
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––
+// mixins
+
+$hoverColours: (
+  'yellow' : $black, // was $yellow
+  'yellow-light' : $yellow_dark,
+  'yellow-hover' : $black,
+  'green' : $green,
+  'green-light' : $green_lighter,
+  'green-hover' : $green_dark,
+  'blue' : $blue,
+  'blue-light' : $blue_lighter,
+  'blue-hover' : $blue_dark,
+  'red' : $red,
+  'red-light' : $red_lighter,
+  'red-hover' : $red_dark
+);
+
+
+@mixin btnType($colourName, $style){
+    // display: inline-block;
+    border : 0;
+    padding: 1rem 2rem;
+    // font-size: 2.25rem;
+    line-height: 1;
+    font-weight: $bold;
+    letter-spacing: .1rem;
+    text-decoration: none;
+    white-space: nowrap;
+    // border-radius: 4px;
+    cursor : pointer;
+    box-sizing: border-box;
+    transition: all ease-in-out 0.3s;
+    background-color: transparent;
+    // @media (min-width: 660px) {
+    //     font-size: 3rem;
+    // }
+
+    // outline
+    // @if $style == 'outline' {
+    //     color : map-get($hoverColours, $colourName);
+    //     border: 2px solid map-get($hoverColours, $colourName);
+    //     &:hover,
+    //     &:focus {
+    //         color : $white;
+    //         background-color : map-get($hoverColours, $colourName);
+    //     }
+    // }
+
+    // // solid
+    // @if $style == 'solid' {
+    //     color : $white;
+    //     background-color : map-get($hoverColours, $colourName);
+    //     &:hover,
+    //     &:focus {
+    //         color : $white;
+    //         background-color: map-get($hoverColours, #{$colourName}#{-hover});
+    //     }
+    // }
+
+    // icon
+    @if $style == 'icon' {
+        color : map-get($hoverColours, $colourName);
+        background-color : map-get($hoverColours, #{$colourName}#{-light});
+        &:hover,
+        &:focus,
+        &.active {
+            outline : none;
+            color : $white;
+            background-color: map-get($hoverColours, #{$colourName}#{-hover});
+        }
+        // not pointer events on i elements
+        > .fa {
+            pointer-events : none;
+            &:nth-child(2) {
+                margin-left : 5px;
+            }
+        }
+    }
+
+
+    @content;
+}
+
+
+
+
+
+
+
+// animation keyframes
+// @mixin pulse($colour){
+@keyframes pulseRed {
+    0% {
+        -moz-box-shadow: 0 0 0 0 rgba($red, 0.4);
+        box-shadow: 0 0 0 0 rgba($red, 0.4);
+    }
+    70% {
+        -moz-box-shadow: 0 0 0 10px rgba($red, 0);
+        box-shadow: 0 0 0 10px rgba($red, 0);
+    }
+    100% {
+        -moz-box-shadow: 0 0 0 0 rgba($red, 0);
+        box-shadow: 0 0 0 0 rgba($red, 0);
+    }
+}
+// }

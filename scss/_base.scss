@@ -86,7 +86,10 @@ a {
 // ––––––––––––––––––––––––––––––––––––––––––––––––––
 // utility classes
 .hidden {
-    display : none;
+    display : none !important;
+}
+.no-pointers {
+    pointer-events : none !important;
 }
 
 // view mechanics

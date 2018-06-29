@@ -73,9 +73,11 @@ input {
 }
 
 
-// uls
+// uls + buttons
+.savedBtns,
 .suggestions,
-.climb-info {
+.climb-info,
+.favourites {
     width : 100%;
     max-width : 90vw;
     margin : 10px 0 0;
@@ -89,10 +91,12 @@ input {
 
 
 
-// suggestions list items
-.suggestions li {
+// suggestions + favourites list items
+.suggestions li,
+.favourites li {
     list-style : none;
     display : flex;
+    flex-wrap : wrap;
     align-items : stretch;
     margin : 0;
     padding : 15px 20px;
@@ -132,6 +136,18 @@ input {
             }
             &.more {
                 flex-basis : 10%;
+            }
+            // repeat ascent
+            &.repeat {
+                color : $white;
+                background-color : $green;
+                flex-grow : 1;
+                padding : 10px;
+                text-align : center;
+                font-size : 1.4rem;
+                @media (min-width: 550px) {
+                    font-size : 1.6rem;
+                }
             }
         }
         .fa {
@@ -207,7 +223,6 @@ input {
     align-self : flex-start; // stop list from being realy high
     background : $white;
     list-style : none;
-    border-bottom : 1px solid $grey_c;
     box-shadow : $box_reg;
 }
 
@@ -256,38 +271,180 @@ input {
             padding : 20px;
         }
         // icons
-        div:not(.settings) .fa:first-child {
-            margin-right : 10px;
-            width : 15px;
+        .grade,
+        .discipline,
+        .style,
+        .partners,
+        .notes,
+        .crag {
+            .fa:first-child {
+                margin-right : 10px;
+                width : 15px;
+            }
         }
     }
 
 
     // within climb details
 
-    // settings icon
     // - save the date + add extra info to it
     // - save/edit the climb details
     // - search options - search routes of same grade, at same crag, on same day
-    .settings {
+    .save {
         position : absolute;
-        top : calc(50% - 40px);
         right : 0;
+        bottom : 0;
+        width : 36px;
+        height : 36px;
+        border-radius : 18px 0 0 0;
+        line-height : 1;
+        background : $green_dark; 
+        cursor : pointer;
+        transition : all 1s;
+        z-index : 1;
+        overflow : hidden;
         > .fa {
-            text-align : center;
-            width : 35px;
-            height : 35px;
-            padding-top : 8px;
-            border-radius : 20px 0 0 20px;
-            background : $blue;
             color : $white;
-            cursor : pointer;
+            width : 18px;
+            height : 18px;
+            pointer-events : none;
+            position : absolute;
+            top : 10px;
+            left : 10px;
+            transition : all 1s;
+        }
+        &:hover {
+            background : $green;
+        }
+
+
+
+        // expanded
+        &.expanded {
+            display : flex;
+            flex-direction : row;
+            width : 100%;
+            height : 100%;
+            border-radius : 0;
+            cursor : default;
+            pointer-events : none;
+            z-index : 2;
+            transition : all 1s;
+            > .fa {
+                // top : calc(50% - 10px);
+                // left : 10%;
+                cursor : pointer;
+                pointer-events : all;
+                //
+                position : relative;
+                display : flex;
+                flex-basis : 25%;
+                align-items : center;
+                justify-content : center;
+
+                top : 0;
+                left : 0;
+                width : 100%;
+                height : 100%;
+            }
+            &:hover {
+                background : $green_dark;
+            }
         }
     }
 
 
 
 
+
+
+    // climb settings section
+    // - added within .settings.expanded only
+    .climb-settings {
+        // background : $white;
+        padding : 20px;
+        // display : flex;
+        // flex-direction : column;
+        flex-basis : 75%;
+        align-items : center;
+        transform : translateY(100%);
+        transition : all 1s;
+        &.slide {
+            background : $white;
+            transform : translateY(0%);
+            pointer-events : all;
+        }
+        > div {
+            display : flex;
+            justify-content : space-between;
+            .fa {
+                margin-right: 10px;
+                width: 15px;
+            }
+            // contains checkbox
+            > div:nth-child(2) {
+                flex-basis : 15%;
+                display : flex;
+                position : relative;
+            }
+        }
+        .title {
+            display : block; // required for central alignment
+        }
+        //
+        .favourite,
+        .memorable-day {
+            margin-bottom : 10px;
+            height : 30px;
+            align-items : center;
+        }
+        .memorable-day {
+            flex-wrap : wrap;
+            > div:nth-child(3){
+                margin-top : 10px;
+                width : 100%;
+            }
+            textarea {
+                width : 100%;
+                padding : 5px 10px;
+                line-height : 1.3;
+                min-height : 100px;
+            }
+        }
+
+        // checkboxes
+        // - checked items have icon
+        input[type="checkbox"] + label {
+            font-family : $font-icons;
+            font-size : 2.5rem;
+            pointer-events : none;
+            position : absolute;
+            left : -3px;
+            top : -3px;
+            &:before {
+                content : "";
+            }
+        }
+        .favourite input[type="checkbox"]:checked + label:before {
+            content : '\f004';
+            color : $red;
+            border-radius : 2.5rem;
+            animation: pulseRed 2s infinite;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    // ____________________
+    //
     .title {
         font-size : 2rem;
         text-align : center;
@@ -369,4 +526,39 @@ input {
 
     
 
+}
+
+
+
+//
+// _______________________________
+// favourite climbs and memorable days - toggle buttons
+// - these are added to the DOM as climbs are added
+// - list uls exist before, have .hidden class added
+.savedBtns {
+    display : flex;
+    flex-direction : row;
+    justify-content : space-between;
+    position : relative;
+    top : 10px;
+    height : 50px;
+    margin : 0 auto;
+    // back btn
+    > button {
+        @include btnType('yellow', 'icon');
+        flex-basis : 25%;
+        width : 25%;
+    }
+    > .savedBtnsContainer {
+        display : flex;
+        flex-basis : 75%;
+        .favBtn {
+            @include btnType('red', 'icon');
+            flex-grow : 1;
+        }
+        .memBtn {
+            @include btnType('blue', 'icon');
+            flex-grow : 1;
+        }
+    }
 }

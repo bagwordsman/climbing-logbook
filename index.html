@@ -11,11 +11,17 @@
 
   <form class="search-form">
     <input type="text" class="search" placeholder="Climb or Crag">
+    <div class="savedBtns hidden">
+      <button class="backBtn active"><i class="fa fa-search"></i></button>
+      <div class="savedBtnsContainer"></div>
+    </div>
     <div class="viewbox">
       <div class="list-container">
         <ul class="suggestions">
           <li><i class="fa fa-chevron-right"></i>Enter climb or crag name to search</li>
         </ul>
+        <ul class="favourites hidden"></ul>
+        <ul class="memorable hidden"></ul>
       </div>
     </div>
   </form>
@@ -173,7 +179,9 @@ function displayMatches(){
 
 // get DOM nodes
 const searchInput = document.querySelector('.search');
+const btnContainer = document.querySelector('.savedBtnsContainer');
 const suggestions = document.querySelector('.suggestions');
+const favourites = document.querySelector('.favourites');
 const listContainer = document.querySelector('.list-container');
 
 // listen for the change AND keyup events on the input box
@@ -461,7 +469,7 @@ function moreInfo(e) {
           <i class="fa fa-chevron-left"></i>
         </div>
         <div class="climb-details">
-          <div class="settings"><i class="fa fa-cog" title="save details"></i></div>
+          <div class="save" data-id="${ID}"><i class="fa fa-save" title="save details"></i><div class="climb-settings"></div></div>
           <div class="title">${name}</div>
           ${gradeHtml}
           ${disciplineHtml}
@@ -485,8 +493,6 @@ function moreInfo(e) {
     searchInput.setAttribute("style", `top:${topOffset}px;`); // set offset
     searchInput.disabled = true; // disable input
 
-
-
     // notes
     // - happens after noesHtml is added to DOM
     // - need to evaluate if text overflows after it has been added to the DOM
@@ -499,6 +505,22 @@ function moreInfo(e) {
       notesLi.innerHTML = "";
       notesLi.insertAdjacentHTML('beforeend', tallContent);
     }
+
+
+
+    // ____________________
+    // favourite and memorable buttons
+    // - if they exist, remove when moving to climb info view
+
+    // favourite
+    if(favClimbs.length > 0){
+      btnContainer.querySelector('.favBtn').remove();
+      btnContainer.parentNode.classList.add('hidden');
+      // || memClimbs.length > 0
+      // btnContainer.querySelector('.memBtn').remove();
+    }
+    
+    
 
 
   }
@@ -515,7 +537,7 @@ function moreInfo(e) {
 
 
   
-  // back button
+  // back button - to suggestions list
 
   // target back button / icon
   if (e.target && e.target.nodeName == "DIV" && e.target.classList.contains('back')) {
@@ -540,6 +562,153 @@ function moreInfo(e) {
     }, time);
 
 
+    
+    
+    // ____________________
+    // favourite and memorable buttons
+    // - add / reveal (if required) when moving back to suggestions list
+    const favBtnPresent = btnContainer.querySelector('.favBtn') != null;
+
+    // favourite(s) added
+    if(favClimbs.length > 0 && favBtnPresent == false){
+      const favBtn = '<button class="favBtn"><i class="fa fa-heart"></i></button>';
+      btnContainer.parentNode.classList.remove('hidden');
+      btnContainer.insertAdjacentHTML('afterbegin', favBtn); // at start of div. beforeend on memorable
+    }
+    // no favourite(s)
+    if(favClimbs.length == 0){
+      btnContainer.parentNode.classList.add('hidden');
+      // - make sure suggestions list is visible
+      suggestions.classList.remove('hidden');
+      favourites.classList.add('hidden');
+    }
+
+
+  }
+
+
+} // end moreInfo() - individual climbs
+
+
+
+
+
+
+
+
+
+
+
+// ________________________________________
+// show climb save options
+function climbSettings(e) {
+
+
+  // open
+  if (e.target && e.target.nodeName == "DIV" && e.target.classList.contains('save')) {
+    e.target.classList.add('expanded');
+    e.target.parentNode.previousElementSibling.classList.add('no-pointers'); // make back btn non clickable
+
+    let ID = e.target.getAttribute('data-id');
+    ID = parseInt(ID);
+    const ascent = climbs[ID]; // can get date from ID, then search climbs array for other climbs on this day
+    const name = ascent.climb;    
+    
+    // need to check or uncheck checkboxes
+    // - favClimbs array
+    const isFav = favClimbs.find(climb => climb.routeID === ID.toString());
+
+    const html = `
+    <div class="title">
+      ${name}
+    </div>
+    <div class="favourite">
+      <div><i class="fa fa-heart red"></i>Favourite Route</div>
+      <div><input type="checkbox" name="favourite" data-id="${ID}" ${isFav ? 'checked' : ''}/><label></label></div>
+    </div>
+    <div class="memorable-day">
+      <div><i class="fa fa-book blue"></i>Memorable Day</div>
+      <div><input type="checkbox" name="memorable" data-id="${ID}"/></div>
+      <div><textarea placeholder="Add something to remember this day by"></textarea></div>
+    </div>
+    `;
+    
+    setTimeout(function(){
+      e.target.querySelector('.climb-settings').innerHTML = html;
+      e.target.querySelector('.climb-settings').classList.add('slide');
+      // checkboxes - save data to local storage
+      const checkboxes = Array.from(e.target.querySelectorAll('input[type=checkbox]'));
+      checkboxes.forEach(checkbox => checkbox.addEventListener('click', saveClimb));
+
+    }, 1000);
+    
+  }
+
+
+  // close
+  if (e.target && e.target.nodeName == "I" && e.target.classList.contains('fa-save')) {
+    
+    e.target.setAttribute('title', 'save details');
+
+    e.target.nextSibling.classList.remove('slide');
+    setTimeout(function(){
+      e.target.nextSibling.innerHTML = "";
+      e.target.parentNode.classList.remove('expanded');
+      e.target.parentNode.parentNode.previousElementSibling.classList.remove('no-pointers'); // make back btn clickable again
+    }, 1000);
+
+  }
+}
+
+
+
+listContainer.addEventListener("click", climbSettings);
+
+
+
+
+
+
+
+
+// ________________________________________
+// save options: favourite route, and memorable date
+const favClimbs = [];
+function saveClimb() {
+
+  const saveType = this.getAttribute('name');
+  const routeID = this.getAttribute('data-id');
+
+
+  // favourite climbs
+  if (saveType === 'favourite') {
+    // console.log(`favourite route id = ${routeID}`);
+    let favourite;
+
+    // checkbox needs to be checked and unchecked in the html to work correctly
+    // - this happens with array .find method in the climbSettings function
+    if (this.checked) {
+      favourite = {
+        routeID,
+        done : true
+      };
+      favClimbs.push(favourite);
+    } else {
+      favClimbs.pop(favourite);
+    }
+
+    // output favourites list in html - (array, html selector)
+    selectedClimbs(favClimbs, favourites);
+  }
+
+
+
+
+
+  // memorable days
+  if (saveType === 'memorable') {
+    console.log(`memorable route id = ${routeID}`);
+    // if box is checked or text entered - will require another event listener
   }
 
 
@@ -549,6 +718,110 @@ function moreInfo(e) {
 
 
 
+// ________________________________________
+// favourite climbs html - make addable anywhere
+// - params: array, element to add into
+// - note: this recreates the list (html) every time an item is added or removed.
+//  - a library or framework may be useful here > smarter + improve performance
+
+// NOTE: a different array method - e.g. reduce may be useful
+// - same routes have been climbed multiple times, I am just marking individual ascents here:
+
+// new version: going towards a loop within a loop (for repeat ascents)
+function selectedClimbs(selectedClimbs = [], climbsList) {
+  climbsList.innerHTML = selectedClimbs.map((climb, i) => {
+
+    // get climb details. climb.routeID = ID (from previous)
+    const ascent = climbs[climb.routeID];
+    const date = ascent.Date;
+    const name = ascent.climb
+    const crag = ascent.crag;
+    
+    
+    
+    // find if the ascent was a repeat:
+    // NOTE: this looks for route name and crag
+    // - if 2 crags of the same name both have a route with the same name, this won't work.
+    const rptAscent = climbs.filter(climb => (climb.climb === name && climb.crag === crag));
+
+    // another idea:
+    // - output all repeat ascents as list items
+
+    // output all favourited ascents
+    return `
+    <li class="searched favourite" data-date="${date}" data-id="${climb.routeID}" data-index="${i}">
+      <span class="date">${date}</span>
+      <span class="name">${name}, ${crag}</span>
+      <span class="more"><i class="fa fa-chevron-right"></i></span>
+      ${rptAscent.length > 1 ? `<span class="repeat">You have climbed <em>'${name}'</em> ${rptAscent.length} times</span>` : ''}
+    </li>
+    `;
+  }).join('');
+}
+
+
+
+
+
+
+
+
+// ________________________________________
+// favourite / memorable climbs button clicks
+function favMemBtns(e) {  
+  e.preventDefault();
+
+  const backBtn = btnContainer.parentNode.querySelector('.backBtn');
+  const backBtnActive = backBtn.querySelector('.fa-chevron-left') != null;
+  const favBtn = btnContainer.querySelector('.favBtn');
+
+  // favourite
+  if (e.target.classList.contains('favBtn')) {
+    suggestions.classList.add('hidden');
+    favourites.classList.remove('hidden');
+    // button
+    e.target.classList.add('active');
+    backBtn.classList.remove('active');
+    // add back chevron if not there
+    if (backBtnActive == false) {
+      backBtn.insertAdjacentHTML('afterbegin', '<i class="fa fa-chevron-left"></i>');
+    }
+  }
+
+
+
+  // if (e.target.classList.contains('memBtn')) {
+  //   console.log('mem');
+  // }
+
+
+
+  // back
+  // - add in back icon when above buttons clicked
+  // - need to show suggestions list when searchbar clicked too
+  if (e.target.classList.contains('backBtn')) {
+    suggestions.classList.remove('hidden');
+    favourites.classList.add('hidden');
+    // button
+    e.target.classList.add('active');
+    favBtn.classList.remove('active');
+    e.target.querySelector('.fa-chevron-left').remove();
+  }
+
+}
+
+
+
+
+
+btnContainer.parentNode.addEventListener("click", favMemBtns);
+
+
+
+
+
+
+// ________________________________________
 // image search test
 // const imageSearch = require('node_modules/node-google-image-search-promise');
 
@@ -560,6 +833,9 @@ function moreInfo(e) {
 
 
 </script>
+
+
+<!-- <script src="js/build/client.bundle.js"></script> -->
 
 
 
