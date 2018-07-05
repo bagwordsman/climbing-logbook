@@ -96,7 +96,8 @@ a {
 .slide-left {
     transform : translateX(-50%);
 }
-.suggestions.shadow-off li {
+.suggestions.shadow-off li,
+.favourites.shadow-off li {
     box-shadow : none;
 }
 .fixed {
@@ -143,23 +144,3 @@ a {
 .black {
     color : $black;
 }
-
-
-
-
-
-
-
-
-
-// ––––––––––––––––––––––––––––––––––––––––––––––––––
-// buttons
-// .button:not(.hidden) {
-//     @include btnType('blue', 'solid');
-//     &.reset {
-//         @include btnType('red', 'solid');
-//     }
-//     &.morph {
-//         @include btnType('green', 'solid');
-//     }
-// }

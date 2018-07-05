@@ -60,10 +60,32 @@
 const endpoint = 'json/mb-logbook.json';
 
 // use fetch API with the endpoint
-const climbs = [];
 
-// const prom = fetch(endpoint);
-// console.log(prom); // this will return a promise in the console - no data yet, something will come back
+
+// empty climbs array
+// let climbs;
+// if (!(localStorage.getItem('climbs'))){
+//   climbs = [];
+// } else {
+//   climbs = JSON.parse(localStorage.getItem('climbs'));
+// }
+const climbs = JSON.parse(localStorage.getItem('climbs')) || [];
+const climbsCount = climbs.length;
+
+
+// favourite climbs - parsed from localStorage, or empty array
+const favClimbs = JSON.parse(localStorage.getItem('favClimbs')) || [];
+
+
+
+// get DOM nodes
+const searchInput = document.querySelector('.search');
+const btnContainer = document.querySelector('.savedBtnsContainer');
+const suggestions = document.querySelector('.suggestions');
+const favourites = document.querySelector('.favourites');
+const listContainer = document.querySelector('.list-container');
+
+
 
 
 // fetch(endpoint).then(blob => console.log(blob));
@@ -71,11 +93,41 @@ const climbs = [];
 // - in 'proto' in console log, there is a method called 'JSON'
 // -> this returns another promise, which you call then on
 
-fetch(endpoint)
-    .then(blob => blob.json())
+// only fetch the endpoint if climbs have not been loaded yet
+if (climbsCount === 0) {
+  fetch(endpoint)
+    .then(blob => blob.json()) // convert blob to json
     // .then(data => console.log(data)) // logs out all items in array
     // .then(data => climbs = data) // this results in an array within the array, should climbs be assigned with 'let'
-    .then(data => climbs.push(...data)) // use spread operator to spread into climbs
+    .then(data => climbs.push(...data)) // use spread operator to spread mulitple arrays into climbs array
+     
+    // climbs array fully loaded
+    .then(function(response) {
+
+      // add climbs to localStorage - if they haven't been already
+      // - rely upon localStorage, rather than endpoint
+      if (!(localStorage.getItem('climbs'))){
+        localStorage.setItem('climbs', JSON.stringify(climbs));
+      }
+    })
+
+}
+
+
+
+
+// ________________________________________
+// compose list of favourite routes - from localStorage
+// ALSO:
+// - if climbs list is loading, show a spinner (might be achievable in fetch code)
+if (favClimbs.length > 0) {
+  selectedClimbs(favClimbs, favourites); // list html
+  favMemBtns(); // buttons html
+}
+
+
+
+
 
 
 
@@ -90,17 +142,27 @@ function findMatches(wordToMatch, climbs) {
   // filter the climbs - a subset of the initial array
   return climbs.filter(entry => {
 
+    // console.log(entry);
+    
     // figure out if the climb or crag matches what was searched
     const regex = new RegExp(wordToMatch, 'gi'); // pass 'flags' you want to search (global, insensitive)    
 
+    // both need to be strings in the data - regex needs to search strings
+    // - only way around this is to convert values to strings
+    const climb = entry["Climb name"];
+    const crag = entry["Crag name"];
+
+    
     // this will filter out integers - e.g. the climb 999
     // - regular expressions only work on strings, original array needs to be changed
-    if ( entry.climb === parseInt(entry.climb, 10)){
-      // convert entry.climb to an integer and return it?
-    } else {
+    // if ( climb === parseInt(climb, 10)){
+    //   // convert entry.climb to an integer and return it?
+    // } else {
+
+    
       // call match with regex on climb name or crag name
-      return entry.climb.match(regex) || entry.crag.match(regex)
-    }
+      return climb.match(regex) || crag.match(regex);
+    // }
 
   })
 }
@@ -143,8 +205,8 @@ function displayMatches(){
     // 1 - use a regex to match
     // 2 - wrap match in a span - highlight in yellow
     const regex = new RegExp(this.value, 'gi');
-    const climbName = entry.climb.replace(regex, `<span class="hl">${this.value}</span>`);
-    const cragName = entry.crag.replace(regex, `<span class="hl">${this.value}</span>`);
+    const climbName = entry["Climb name"].replace(regex, `<span class="hl">${this.value}</span>`);
+    const cragName = entry["Crag name"].replace(regex, `<span class="hl">${this.value}</span>`);
     
     // add an ID to each climb - for more info on button click
     const climbDate = entry.Date;
@@ -177,12 +239,7 @@ function displayMatches(){
 
 
 
-// get DOM nodes
-const searchInput = document.querySelector('.search');
-const btnContainer = document.querySelector('.savedBtnsContainer');
-const suggestions = document.querySelector('.suggestions');
-const favourites = document.querySelector('.favourites');
-const listContainer = document.querySelector('.list-container');
+
 
 // listen for the change AND keyup events on the input box
 searchInput.addEventListener('change', displayMatches);
@@ -258,6 +315,8 @@ function expand(obj) {
 
 
 // add faded div if notes section is overflown
+// - needs improvement: if scrolled to bottom, remove arrow
+// - if only overflows slightly, dont add an overflow (overflow includes padding)
 function isOverflown(element) {
     return element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth;
 }
@@ -292,13 +351,13 @@ function moreInfo(e) {
     const ascent = climbs[ID];
     // get full info
     const date = ascent.Date;
-    const name = ascent.climb;
+    const name = ascent["Climb name"];
     let grade = ascent.Grade; // need to convert to a string - lower grade american routes are numerical in data
     grade = grade.toString();
     const style = ascent.Style;
     const partners = ascent["Partner(s)"];
     const notes = ascent.Notes;
-    const crag = ascent.crag;
+    const crag = ascent["Crag name"];
 
     
 
@@ -484,7 +543,9 @@ function moreInfo(e) {
 
     listContainer.insertAdjacentHTML('beforeend', html);
     listContainer.classList.add('slide-left');
+    // could be simplified:
     suggestions.classList.add('shadow-off');
+    favourites.classList.add('shadow-off');
 
     // keep position of climb-info (prevent scroll)
     document.body.classList.add('fixed');
@@ -612,7 +673,7 @@ function climbSettings(e) {
     let ID = e.target.getAttribute('data-id');
     ID = parseInt(ID);
     const ascent = climbs[ID]; // can get date from ID, then search climbs array for other climbs on this day
-    const name = ascent.climb;    
+    const name = ascent["Climb name"];    
     
     // need to check or uncheck checkboxes
     // - favClimbs array
@@ -673,7 +734,11 @@ listContainer.addEventListener("click", climbSettings);
 
 // ________________________________________
 // save options: favourite route, and memorable date
-const favClimbs = [];
+
+// favourite climbs - parsed from localStorage, or empty array
+// const favClimbs = JSON.parse(localStorage.getItem('favClimbs')) || [];
+
+
 function saveClimb() {
 
   const saveType = this.getAttribute('name');
@@ -699,6 +764,8 @@ function saveClimb() {
 
     // output favourites list in html - (array, html selector)
     selectedClimbs(favClimbs, favourites);
+    // save favourites into localStorage
+    localStorage.setItem('favClimbs', JSON.stringify(favClimbs));
   }
 
 
@@ -731,18 +798,21 @@ function saveClimb() {
 function selectedClimbs(selectedClimbs = [], climbsList) {
   climbsList.innerHTML = selectedClimbs.map((climb, i) => {
 
+    // const climbs = 
+    const climbs = JSON.parse(localStorage.getItem('climbs'));
+    
     // get climb details. climb.routeID = ID (from previous)
     const ascent = climbs[climb.routeID];
     const date = ascent.Date;
-    const name = ascent.climb
-    const crag = ascent.crag;
+    const name = ascent["Climb name"]
+    const crag = ascent["Crag name"];
     
     
     
     // find if the ascent was a repeat:
     // NOTE: this looks for route name and crag
     // - if 2 crags of the same name both have a route with the same name, this won't work.
-    const rptAscent = climbs.filter(climb => (climb.climb === name && climb.crag === crag));
+    const rptAscent = climbs.filter(climb => (climb["Climb name"] === name && climb["Crag name"] === crag));
 
     // another idea:
     // - output all repeat ascents as list items
@@ -768,25 +838,63 @@ function selectedClimbs(selectedClimbs = [], climbsList) {
 
 // ________________________________________
 // favourite / memorable climbs button clicks
+// - requires e.target
 function favMemBtns(e) {  
-  e.preventDefault();
-
+  
   const backBtn = btnContainer.parentNode.querySelector('.backBtn');
   const backBtnActive = backBtn.querySelector('.fa-chevron-left') != null;
-  const favBtn = btnContainer.querySelector('.favBtn');
 
-  // favourite
-  if (e.target.classList.contains('favBtn')) {
-    suggestions.classList.add('hidden');
-    favourites.classList.remove('hidden');
-    // button
-    e.target.classList.add('active');
-    backBtn.classList.remove('active');
-    // add back chevron if not there
-    if (backBtnActive == false) {
-      backBtn.insertAdjacentHTML('afterbegin', '<i class="fa fa-chevron-left"></i>');
+
+  // event fired by click:
+  if(e !== undefined) {
+    e.preventDefault();
+
+    const favBtn = btnContainer.querySelector('.favBtn');
+    
+    // favourite btn
+    if (e.target.classList.contains('favBtn')) {
+      suggestions.classList.add('hidden');
+      favourites.classList.remove('hidden');
+      // button
+      e.target.classList.add('active');
+      backBtn.classList.remove('active');
+      // add back chevron if not there
+      if (backBtnActive == false) {
+        backBtn.insertAdjacentHTML('afterbegin', '<i class="fa fa-chevron-left"></i>');
+      }
     }
+
+    // back btn
+    // - add in back icon when above buttons clicked
+    // - need to show suggestions list when searchbar clicked too
+    if (e.target.classList.contains('backBtn')) {
+      suggestions.classList.remove('hidden');
+      favourites.classList.add('hidden');
+      // button
+      e.target.classList.add('active');
+      favBtn.classList.remove('active');
+      // remove back button if there
+      if (backBtnActive == true) {
+        e.target.querySelector('.fa-chevron-left').remove();
+      }
+    }
+
   }
+
+
+  // event fired on climbs array load: (looks for favClimbs from localStorage)
+  else {
+    // indicates that climbs have been favourited:
+    // - fav button
+    const favBtn = '<button class="favBtn"><i class="fa fa-heart"></i></button>';
+    btnContainer.parentNode.classList.remove('hidden');
+    btnContainer.insertAdjacentHTML('afterbegin', favBtn);
+
+  }
+  
+
+
+  
 
 
 
@@ -796,17 +904,7 @@ function favMemBtns(e) {
 
 
 
-  // back
-  // - add in back icon when above buttons clicked
-  // - need to show suggestions list when searchbar clicked too
-  if (e.target.classList.contains('backBtn')) {
-    suggestions.classList.remove('hidden');
-    favourites.classList.add('hidden');
-    // button
-    e.target.classList.add('active');
-    favBtn.classList.remove('active');
-    e.target.querySelector('.fa-chevron-left').remove();
-  }
+  
 
 }
 
@@ -815,6 +913,15 @@ function favMemBtns(e) {
 
 
 btnContainer.parentNode.addEventListener("click", favMemBtns);
+
+
+
+
+
+
+
+
+
 
 
 
