@@ -2,8 +2,7 @@
 // - typography
 // - links
 // - utility classes
-
-// - buttons (move to mixins) - not used
+// - components, e.g. calendar
 
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -94,10 +93,19 @@ a {
 
 // view mechanics
 .slide-left {
-    transform : translateX(-50%);
+    transform : translateX(-33.33333%);
+    // transform : translateX(-50%);
 }
+.slide-left-again {
+    transform : translateX(-66.66666%);
+}
+
+// remove list item shadow - this is visible when view class is applied
 .suggestions.shadow-off li,
-.favourites.shadow-off li {
+.favourites.shadow-off li,
+.memorable.shadow-off li,
+.climb-info.shadow-off,
+.climb-info.shadow-off li {
     box-shadow : none;
 }
 .fixed {
@@ -119,7 +127,8 @@ a {
     margin-left : 5px;
 }
 .not-set {
-    filter : grayscale(50%); // calendar
+    filter : grayscale(50%); // calendar items
+    // filter : sepia(50%);
 }
 
 
@@ -143,4 +152,50 @@ a {
 }
 .black {
     color : $black;
+}
+
+
+
+
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––
+// components
+
+// calendar - within .date
+// - can be used in both lists, needs to be independent
+.calendar {
+    display : flex;
+    flex-direction: column;
+    text-align : center;
+    transform : rotate(-3.5deg);
+    // month, day, year
+    > span {
+        padding : 3px 2px;
+        transition : all .5s;
+        &:hover {
+            transform : scale(1.35) rotate(3.5deg);
+            font-size : 100%;
+        }
+        // spread parts out
+        &:hover + span {
+            transform : translateY(15px);
+        }
+        &:hover + span + span {
+            transform : translateY(30px);
+        }
+    }
+}
+// month, day, year
+.month {
+    background-color : $red;
+    color : $white;
+    font-size : 1rem;
+}
+.day {
+    background-color : $white;
+    font-size : 1.5rem;
+}
+.year {
+    background-color : $grey_d;
+    font-size : 1rem;
 }

@@ -70,8 +70,8 @@ $box_inset : 0 0 5px rgba(0, 0, 0, 0.12), inset 0 0 2px rgba(0, 0, 0, 0.19);
 $box_reg : 0 0 10px rgba(0, 0, 0, 0.14);
 
 $grad_hover : linear-gradient(to top, $white 0%,$grey_b 100%);
-// $grad_blue : linear-gradient(rgba(255, 255, 255, 0) 0%, rgba(55, 120, 255, .3) );
-$grad_blue : linear-gradient(rgba($white, 0)  0%, rgba($blue, .5) );
+$grad_blue : linear-gradient(to top, $blue_lighter 0%, $blue_light 100%);
+$grad_red : linear-gradient(to top, $red_lighter 0%, $red_light 100%);
 
 
 
@@ -114,31 +114,6 @@ $hoverColours: (
     box-sizing: border-box;
     transition: all ease-in-out 0.3s;
     background-color: transparent;
-    // @media (min-width: 660px) {
-    //     font-size: 3rem;
-    // }
-
-    // outline
-    // @if $style == 'outline' {
-    //     color : map-get($hoverColours, $colourName);
-    //     border: 2px solid map-get($hoverColours, $colourName);
-    //     &:hover,
-    //     &:focus {
-    //         color : $white;
-    //         background-color : map-get($hoverColours, $colourName);
-    //     }
-    // }
-
-    // // solid
-    // @if $style == 'solid' {
-    //     color : $white;
-    //     background-color : map-get($hoverColours, $colourName);
-    //     &:hover,
-    //     &:focus {
-    //         color : $white;
-    //         background-color: map-get($hoverColours, #{$colourName}#{-hover});
-    //     }
-    // }
 
     // icon
     @if $style == 'icon' {
@@ -171,19 +146,84 @@ $hoverColours: (
 
 
 // animation keyframes
-// @mixin pulse($colour){
-@keyframes pulseRed {
-    0% {
-        -moz-box-shadow: 0 0 0 0 rgba($red, 0.4);
-        box-shadow: 0 0 0 0 rgba($red, 0.4);
-    }
-    70% {
-        -moz-box-shadow: 0 0 0 10px rgba($red, 0);
-        box-shadow: 0 0 0 10px rgba($red, 0);
-    }
-    100% {
-        -moz-box-shadow: 0 0 0 0 rgba($red, 0);
-        box-shadow: 0 0 0 0 rgba($red, 0);
+@mixin pulse($colourName){
+    // $colorVar : map-get($hoverColours, $colourName);
+    @keyframes pulse#{$colourName} {
+        $color : map-get($hoverColours, $colourName);
+        0% {
+            -moz-box-shadow: 0 0 0 0 rgba($color, 0.4);
+            box-shadow: 0 0 0 0 rgba($color, 0.4);
+        }
+        70% {
+            -moz-box-shadow: 0 0 0 10px rgba($color, 0);
+            box-shadow: 0 0 0 10px rgba($color, 0);
+        }
+        100% {
+            -moz-box-shadow: 0 0 0 0 rgba($color, 0);
+            box-shadow: 0 0 0 0 rgba($color, 0);
+        }
     }
 }
-// }
+
+@include pulse('red');
+@include pulse('blue');
+
+
+
+
+
+
+
+
+
+// save route - checkbox and label pairs
+@mixin saveRoute($icon, $colour, $animation){
+    display : flex;
+    align-items : center;
+    height : 30px;
+    input {
+        flex : 0;
+        display : none;
+    }
+    label {
+        flex : 1;
+        cursor : pointer;
+    }
+    input + label:before {
+        content: '⬜️';
+        margin-right: 10px;
+    }
+    input:checked + label:before {
+        margin-right: 8px;
+        font-family : $font-icons;
+        font-size : 2.5rem;
+        content : $icon;
+        color : $colour;
+        border-radius : 2.5rem;
+        animation: $animation 2s infinite;
+    }
+    @content;
+}
+
+
+
+
+
+// list items
+@mixin listItem($padding){
+    list-style : none;
+    display : flex;
+    flex-wrap : wrap;
+    align-items : stretch;
+    margin : 0;
+    padding : $padding;
+    background : $white;
+    border-bottom : 1px solid $grey_c;
+    box-shadow : $box_reg;
+    transition : background 0.2s;
+    > .fa {
+        align-self : center;
+        margin-right : 10px;
+    }
+    @content;
+}

@@ -32,80 +32,142 @@
 
 <script>
 
-// adapted from ajax type ahead thing
-
-
-// - steps:
-// 1 - fetch data (array from endpoint)
-// 2 - type into the input box, filter the text by subset which the climb or crag matches
-// 3 - click button, show more info about climb or crag
-//    - when a climb is selected, data comes from climb ID (inferred by order in data array)
-//    - when a crag is selected, data on all climbs I have done at the crag becomes available
-
-
-
-// 1 - get data
-// 2 - get functions in place
-// 3 - hook up to event listeners
-
-
-// fetch API will return a promise
-
-
-// things to try out
-// - use geolocation - sort by crags closest to me
-
-
 // ________________________________________________
-const endpoint = 'json/mb-logbook.json';
-
-// use fetch API with the endpoint
-
-
-// empty climbs array
-// let climbs;
-// if (!(localStorage.getItem('climbs'))){
-//   climbs = [];
-// } else {
-//   climbs = JSON.parse(localStorage.getItem('climbs'));
-// }
-const climbs = JSON.parse(localStorage.getItem('climbs')) || [];
-const climbsCount = climbs.length;
+// climbing logbook
+// - filter climbing logbook by route or crag name in input field
+// - save favourite routes
+// - save memorable days (with info)
+// -- data, favourites, and memorable days saved to localStorage
 
 
-// favourite climbs - parsed from localStorage, or empty array
-const favClimbs = JSON.parse(localStorage.getItem('favClimbs')) || [];
 
+// contents:
+// - needs updating...
 
 
 // get DOM nodes
+// event listeners
+// get endpoint, compose data
+
+
+// performance functions:
+// debounce()
+
+
+// search functions:
+// - findMatches()
+// - displayMatches()
+// - blurSearch()
+
+// climb-info view functions:
+// - calendarHtml(), isOverflown(), calendarHtml()
+// - climbDetail()
+// - backToMatches()
+
+
+// favourites functions:
+// - saveClimb()
+
+
+
+
+
+
+// ________________________________________________
+// get DOM nodes
 const searchInput = document.querySelector('.search');
 const btnContainer = document.querySelector('.savedBtnsContainer');
+const listContainer = document.querySelector('.list-container');
+const mainLists = listContainer.querySelectorAll('ul');
+// lists
 const suggestions = document.querySelector('.suggestions');
 const favourites = document.querySelector('.favourites');
-const listContainer = document.querySelector('.list-container');
+const memorable = document.querySelector('.memorable');
 
 
 
 
-// fetch(endpoint).then(blob => console.log(blob));
-// data that comes back from fetch does not yet know what type it is
-// - in 'proto' in console log, there is a method called 'JSON'
-// -> this returns another promise, which you call then on
 
-// only fetch the endpoint if climbs have not been loaded yet
-if (climbsCount === 0) {
+
+
+// ________________________________________________
+// event listeners
+
+// search functions
+// - change and keyup
+searchInput.addEventListener('change', debounce(displayMatches));
+searchInput.addEventListener('keyup', debounce(displayMatches));
+// unfocus search input
+// - mouseout
+searchInput.addEventListener('mouseout', blurSearch);
+
+
+
+// climb-info view functions
+// - more detail on climbs
+// - includes back button
+// - huge function, simplify it
+listContainer.addEventListener("click", detailView);
+listContainer.addEventListener("click", climbDetail); // climb (ascent) click
+listContainer.addEventListener("click", dayDetail); // memorable days click
+listContainer.addEventListener("click", backToMatches);
+
+
+// save functions
+// - save expanded view
+listContainer.addEventListener("click", climbSettings);
+
+// - checkboxes - save data to local storage
+listContainer.addEventListener("click", saveClimb);
+
+// - memorable notes - save data to local storage
+listContainer.addEventListener("keyup", memorableNotes);
+
+// - memorable routes - click to reveal routes climbed on memorable day
+listContainer.addEventListener("click", memorableRoutes);
+
+
+
+
+
+// button functions
+btnContainer.parentNode.addEventListener("click", favMemBtns);
+
+
+
+
+
+
+
+
+// ________________________________________________
+// get endpoint, compose data
+const endpoint = 'json/mb-logbook.json';
+
+// data: climbs, favourite climbs, memorable days
+const climbs = JSON.parse(localStorage.getItem('climbs')) || [];
+const climbsCount = climbs.length; // check if climbs have been loaded from endpoint already
+const favClimbs = JSON.parse(localStorage.getItem('favClimbs')) || [];
+const memDays = JSON.parse(localStorage.getItem('memDays')) || [];
+
+
+// compose climbs array
+// - uses fetch API - returns a promise from endpoint with .then()
+if (climbsCount === 0) { // make sure we only fetch the endpoint once
   fetch(endpoint)
-    .then(blob => blob.json()) // convert blob to json
-    // .then(data => console.log(data)) // logs out all items in array
-    // .then(data => climbs = data) // this results in an array within the array, should climbs be assigned with 'let'
-    .then(data => climbs.push(...data)) // use spread operator to spread mulitple arrays into climbs array
-     
-    // climbs array fully loaded
+    .then(blob => blob.json()) // run .json() method on blob => convert to json
+    .then(data => climbs.push(...data)) // use spread operator to spread mulitple arrays into one climbs array  
+    // climbs array is fully loaded
+    // => add climbs to localStorage, if not there 
     .then(function(response) {
 
-      // add climbs to localStorage - if they haven't been already
-      // - rely upon localStorage, rather than endpoint
+
+      // handle these things (below). May be a long term project
+      // - handle stuff at source / file save. No luck in excel - comma delimited csv so far
+      // - regular expression - handle special characters this way + rewrite route names and crag names
+      // -- better to handle / organise data at source better. Less code to maintain if so.
+      // �
+
       if (!(localStorage.getItem('climbs'))){
         localStorage.setItem('climbs', JSON.stringify(climbs));
       }
@@ -114,16 +176,15 @@ if (climbsCount === 0) {
 }
 
 
-
-
-// ________________________________________
-// compose list of favourite routes - from localStorage
-// ALSO:
-// - if climbs list is loading, show a spinner (might be achievable in fetch code)
+// favourite routes array (and html)
 if (favClimbs.length > 0) {
-  selectedClimbs(favClimbs, favourites); // list html
-  favMemBtns(); // buttons html
+  debounce(favouriteClimbs(favClimbs, favourites)); // list html  
 }
+// memorable dates array (and html)
+if (memDays.length > 0) {
+  debounce(memorableDays(memDays, memorable));// list html
+}
+favMemBtns(); // buttons html - conditional below
 
 
 
@@ -132,89 +193,82 @@ if (favClimbs.length > 0) {
 
 
 
+// ________________________________________________
+// performance functions:
+
+
+
+
+// debounce function
+// - fire functions less frequently to increase performance. Default = 20ms
+// - used by displayMatches() and favouriteClimbs() - perhaps not on selected?
+// - parameters: (function to run, wait time)
+function debounce(func, wait = 20, immediate = true) {
+  var timeout;
+  return function() {
+    var context = this, args = arguments;
+    var later = function() {
+      timeout = null;
+      if (!immediate) func.apply(context, args);
+    };
+    var callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(context, args);
+  };
+};
+
+
+
+
+
+
+
+// ________________________________________________
+// search functions:
 
 // find matches function
-// - gets climb data for matched text, from the original array
-
-// - can only take strings. Integer 999 stumped this before
-// - need to convert integers to strings
+// - parameters: (matched text, array to search)
+// - requires all values in data to be strings (uses RegExp)
 function findMatches(wordToMatch, climbs) {
-  // filter the climbs - a subset of the initial array
   return climbs.filter(entry => {
 
-    // console.log(entry);
-    
-    // figure out if the climb or crag matches what was searched
-    const regex = new RegExp(wordToMatch, 'gi'); // pass 'flags' you want to search (global, insensitive)    
-
-    // both need to be strings in the data - regex needs to search strings
-    // - only way around this is to convert values to strings
+    // flags: global, insensitive 
+    const regex = new RegExp(wordToMatch, 'gi');   
+    // keys to search
     const climb = entry["Climb name"];
     const crag = entry["Crag name"];
 
-    
-    // this will filter out integers - e.g. the climb 999
-    // - regular expressions only work on strings, original array needs to be changed
-    // if ( climb === parseInt(climb, 10)){
-    //   // convert entry.climb to an integer and return it?
-    // } else {
-
-    
-      // call match with regex on climb name or crag name
-      return climb.match(regex) || crag.match(regex);
-    // }
-
+    // return climb name or crag name
+    return climb.match(regex) || crag.match(regex);
   })
 }
 
 
 
-// calendar function - used twice
-// - year is always present. When not set, it is the 2nd item in the array
-function calendarHtml(date) {
-  const noDate = date.match(/^\?/);
-  const split = date.split("/");
-  return `
-  <span class="calendar${noDate ? " not-set" : ""}">
-    <span class="month">${noDate ? `N/A` : `${split[1]}`}</span>
-    <span class="day">${noDate ? `N/A` : `${split[0]}`}</span>
-    <span class="year">${noDate ? `${split[1]}` : `20${split[2]}`}</span>
-  </span>
-  `;
-}
-
-
-
-
-
-
-
-
 
 // display matches function
-// - take value of the input field, convert it into matched items from the data
+// - runs findMatches() function
+// - takes input field value
+// - outputs html as list items into .suggestions ul
 function displayMatches(){
-
-  // call the findMatches function, passing the value to it
+  
+  // call findMatches() function
   const matchArray = findMatches(this.value, climbs);
 
   // compose html
   let html = matchArray.map(entry => {
     
-    // format the html - highlight the searchterm:
-    // 1 - use a regex to match
-    // 2 - wrap match in a span - highlight in yellow
+    // highlight searchterm with .hl class
     const regex = new RegExp(this.value, 'gi');
     const climbName = entry["Climb name"].replace(regex, `<span class="hl">${this.value}</span>`);
     const cragName = entry["Crag name"].replace(regex, `<span class="hl">${this.value}</span>`);
     
-    // add an ID to each climb - for more info on button click
-    const climbDate = entry.Date;
-    const climbID = climbs.indexOf(entry); // search for entry (item in 'climbs' array)
+    const climbDate = entry.Date; // climb date
+    const climbID = climbs.indexOf(entry); // assign an ID for each ascent, based on the index
 
-    // format the date a bit nicer - use calendar function
-    // const dateHtml = calendarHtml(climbDate);
-    
+    // return html for each search result
+    // - make this smarter, can use up a lot of memory
     return `
       <li class="searched" data-date="${climbDate}" data-id="${climbID}">
         <span class="date">${climbDate}</span>
@@ -222,48 +276,23 @@ function displayMatches(){
         <span class="more"><i class="fa fa-chevron-right"></i></span>
       </li>
     `;
-  }).join(''); // this returns an array (of matches), which need to be joined into a string
+  }).join(''); // join array as a string
 
   // no results message
   if (html.length < 1) {
     html = `<li class="no-results">No results found. Please try again</li>`;
   }
-  // add above html to suggestions
+  // add html to DOM
   suggestions.innerHTML = html;
 
-  // find out when input is focused. Want to make climb-info work on 1st click
-  // - think of mobile as well, can't do on mousemove only
-  // - timeout may be best
-
 }
 
 
 
-
-
-// listen for the change AND keyup events on the input box
-searchInput.addEventListener('change', displayMatches);
-searchInput.addEventListener('keyup', displayMatches);
-
-
-// a way to add event listener to mulitple elements of the same type
-// - may not apply here - elements are delegated
-// skipButtons.forEach(button => button.addEventListener('click', skip));
-
-
-
-
-
-
-
-// unfocus search input - mouseout for non mobile, timeout (after focus) for mobile
-searchInput.addEventListener('mouseout', blurSearch);
-
-
-// need to unfocus search to allow one click to take you to result
+// unfocus search function
+// - allow one click to take you to result
 function blurSearch(){
   searchInput.blur();
-  // console.log(searchInput);
 }
 
 
@@ -272,36 +301,65 @@ function blurSearch(){
 
 
 
-// keep more-info container in view
-// - added in container function, results in jerk.
-// - probably best to do some absolute positioning
-// window.addEventListener('scroll', climbInfoOffset);
+// ________________________________________________
+// climb-info view functions
 
-// function climbInfoOffset() {
-//   const topOffset = window.pageYOffset + 10;
-//   listContainer.querySelector('.climb-info').style.marginTop = `${topOffset}px`;
-// }
+// const unset = climbs.filter(climb => (climb.Date.match(/^\?/)));
+// console.log(unset);
 
+// calendar html function
+function calendarHtml(date) {
+  const missingItem = date.match(/^\?/);
+  const split = date.split("/");
 
+  // 3 lengths for split - day, month, year
+  // - lengths of each: 2, 3, 2(if entered) or 4
 
+  // day, month, year entered
+  if (!missingItem) {
+    return `
+    <span class="calendar">
+      <span class="month">${split[1]}</span>
+      <span class="day">${split[0]}</span>
+      <span class="year">20${split[2]}</span>
+    </span>
+    `;
+  }
 
+  // part of entry is missing
+  if (missingItem) {
 
-// __________________
-// more info buttons
+    let month, day, year;
 
-// 1 - get the clicked button
-// 2 - get the data associated with it
-// 3 - compose html for associated data
-// 4 - add html to DOM
-// 5 - slide out previous list, slide in new one, with button to slide back
-listContainer.addEventListener("click", moreInfo);
+    if (split.length === 2) {
+      day = 'N/A';
+      month = split[0].match(/^\?/) ? 'N/A' : split[0];
+      year = split[1].match(/^\?/) ? 'N/A' : split[1];
 
+    }
+    if (split.length === 3) {
+      day = split[0].match(/^\?/) ? 'N/A' : split[0];
+      month = split[1].match(/^\?/) ? 'N/A' : split[1];
+      year = split[2].match(/^\?/) ? 'N/A' : `20${split[2]}`;
+    }
+
+    return `
+    <span class="calendar not-set">
+      <span class="month">${month}</span>
+      <span class="day">${day}</span>
+      <span class="year">${year}</span>
+    </span>
+    `;
+  }
+
+}
 
 
 
 
 // expand object function
-// - allow mulitple keys to be assigned to same values - useful for grade colour banding
+// - allow mulitple keys to be assigned to same values
+// - used for grade colour banding
 function expand(obj) {
   const keys = Object.keys(obj);
   for (const key of keys) {
@@ -314,9 +372,10 @@ function expand(obj) {
 }
 
 
-// add faded div if notes section is overflown
-// - needs improvement: if scrolled to bottom, remove arrow
-// - if only overflows slightly, dont add an overflow (overflow includes padding)
+
+// overflow function
+// - used for notes section
+// - needs improvement: if only overflows slightly, dont add stuff
 function isOverflown(element) {
     return element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth;
 }
@@ -327,269 +386,175 @@ function isOverflown(element) {
 
 
 
-// switch between list and individual items - ul.suggestions and ul.climb-info
-// - forward and back
-function moreInfo(e) {
 
 
-  // more button
-  // - this does not fire on first click, only second click. Needs to fire on first
-  // - may be because input field is still focused. First click de-focuses input field.
-  // NOTE: this section will get bloated - look into ways of splitting js up
-  if (e.target && e.target.nodeName == "LI" && e.target.classList.contains('searched')) {
+// _____________________________________________________
+// view functions:
+
+// detail view function
+// - applies to ALL list items (with .searched)
+// - .climb-info (suggestions, favourites, memorable ascents AND memorable day > routes)
+// - works with backToMatches()
+function detailView(e) {
+  if (!e.target.matches('li.searched')) return;
+
+  // ________________
+  // ALL list items
+
+  // keep position of climb-info (prevent scroll)
+  document.body.classList.add('fixed');
+
+  // remove buttons, if they exist
+  // - note: this needs to be done first for searchInput and list (in climbDetail) to be positioned right
+  if (favClimbs.length > 0 || memDays.length > 0) {
+    btnContainer.innerHTML = '';
+    btnContainer.parentNode.classList.add('hidden');
+  }
+
+  // searchbar - AFTER buttons
+  const topOffset = (window.pageYOffset + 10).toString();
+  searchInput.setAttribute("style", `top:${topOffset}px;`); // set offset
+  searchInput.disabled = true; // disable input
 
 
-    // offset the .climb-info ul with a top margin
-    // - required for elements at the bottom of the page / when scrolled down
-    const topOffset = (window.pageYOffset + 10).toString();
+  // ________________
+  // clicked from .climb-info view (memorable day > route)
+  const memUl = e.target.parentNode.classList.contains('climb-info');
+  const memUlEl = e.target.parentNode;
 
-
-    // get the ID (convert to numeric)
-    let ID = e.target.getAttribute('data-id');
-    ID = parseInt(ID);
-    // get the climb from the array
-    const ascent = climbs[ID];
-    // get full info
-    const date = ascent.Date;
-    const name = ascent["Climb name"];
-    let grade = ascent.Grade; // need to convert to a string - lower grade american routes are numerical in data
-    grade = grade.toString();
-    const style = ascent.Style;
-    const partners = ascent["Partner(s)"];
-    const notes = ascent.Notes;
-    const crag = ascent["Crag name"];
-
-    
-
-    
-    // _________________
-    // grade - most complex parameter of the lot
-    // - star count, discipline, grade band colour
-    // - grade band dependent upon discipline, and grading system
-    // - can't tell discipline from grade for roped climbs, unless in UK system
-
-    // order:
-    // uk trad, sport / french, USA, norse, bouldering, winter, ice
-
-    // get the grade - first word of string
-    const getGrade = grade.split(" ")[0];
-    
-    // grade bands object
-    const gradeBands = expand({
-
-      "M, D, VD, HVD, S, 1, 2, 3, 4a, 4b, 4c, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, n1, n2, n3, n4, f1, f2, f2+, f3, f3+, I, II, WI-1, WI-2" : {
-        band : ' green'
-      },
-      "HS, MVS, VS, HVS, 5a, 5b, 5c, 6a, 6a+, 5.7, 5.8, 5.9, 5.10a, 5.10b, 5.10c, n5-, n5, n5+, f4, f4+, III, IV, WI-3, WI-4" : {
-        band : ' yellow'
-      },
-      "E1, E2, E3, 6b, 6b+, 6c, 6c+, 7a, 5.10d, 5.11a, 5.11b, 5.11c, 5.11d, n6-, n6, n6+ f5, f5+, f6A, f6A+, V, VI, WI-5" : {
-        band : ' red'
-      },
-      "E4, E5, E6, E7, E8, E9, E10, E11, E12, 7a+, 7b, 7b+, 7c, 7c+, 8a, 8a+, 8b, 8b+, 8c, 8c+, 9a, 9a+, 9b, 9b+, 9c, 5.12a, 5.12b, 5.12c, 5.12d, 5.13a, 5.13b, 5.13c, 5.13d, 5.14a, n7-, n7, n7+, n8-, n, n8+, f6B, f6B+, f6C, f6c+, f7A, f7A+, f7B, f7B+, f7C, f7C+, f8A, VII, VIII, IX, X, WI-6, WI-7" : {
-        band : ' black'
-      }
-      
-    });
-
-    // disciplines object
-    // const gradeDisciplines = expand({
-
-    //   "M, D, VD, HVD, S, HS, MVS, VS, HVS, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12" : {
-    //     discipline : 'UK trad'
-    //   },
-    //   "1, 2, 3, 4a, 4b, 4c, 5a, 5b, 5c, 6a, 6a+, 6b, 6b+, 6c, 6c+, 7a, 7a+, 7b, 7b+, 7c, 7c+, 8a, 8a+, 8b, 8b+, 8c, 8c+, 9a, 9a+, 9b, 9b+, 9c" : {
-    //     discipline : 'French grade - usually sport'
-    //   },
-    //   "5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10a, 5.10b, 5.10c, 5.10d, 5.11a, 5.11b, 5.11c, 5.11d, 5.12a, 5.12b, 5.12c, 5.12d, 5.13a, 5.13b, 5.13c, 5.13d, 5.14a" : {
-    //     discipline : 'American grade - sport or trad'
-    //   }
-      
-    // });
-
-    // grade - get colour brand from object
-    const getColour = gradeBands[getGrade].band;
-    // console.log(gradeBands[getGrade].band);
-    // console.log(gradeDisciplines[getGrade].discipline);
-
-
-    // regex for discipline - more efficient than an object
-    let discipline;
-    if (grade.match(/^W/)) {
-      discipline = 'ice';
-    }
-    else if (grade.match(/^M[0-9]/)) { // M followed by a number
-      discipline = 'mixed';
-    }
-    else if (grade.match(/^f/)) {
-      discipline = 'bouldering';
-    }
-    else if (grade.match(/^I|V(?!S|D)/)) { // I or V if not followed by S or D
-      discipline = 'winter';
-    }
-    else if (grade.match(/^[A-Z]/)) { // starts with a capital letter, comes after the above
-      discipline = 'UK trad';
-    }
-    else if (grade.match(/^[1-9][a-c]/)) { // starts with a number, followed by lowercase letter
-      discipline = 'French grade - usually sport';
-    }
-    else if (grade.match(/^5/)) { // starts with a 5
-      discipline = 'American grade - sport or trad';
-    }
-    else if (grade.match(/^n/)) { // starts with a lowercase n
-      discipline = 'Norse grade - sport or trad';
-    }
-
-    // stars: swap * for fa-star
-    const withStars = grade.replace(/\*/g,"<i class='fa fa-star yellow margin-left'></i>");
-    const gradeHtml = `<div class="grade"><i class="fa fa-circle${getColour}"></i>${withStars}</div>`;
-
-    // discipline
-    const disciplineHtml = `<div class="discipline"><i class="fa fa-chevron-right"></i>${discipline}</div>`;
-
-
-
-
-
-
-
-
-
-    
-    
-    // _________________
-    // style
-    // Lead (or solo) + (0/S, _, RP, rpt, x) = green (note that '_' is a flash)
-    // TR + (0/S, _, G/U, RP, rpt) = blue
-    // dog, dnf = red
-
-    let success = /(O\/S|_|G\/U|RP|rpt|x)/;
-    success = style.match(success);
-
-    let fail = /(dog|dnf)/;
-    fail = style.match(fail);
-
-    // set colour and icon
-    let styleColour;
-    let styleIcon;
-    let styleUnset;
-    
-    if (fail !== null){
-      styleColour = ' red';
-      styleIcon = ' fa-close';
-    }
-    else if (success !== null){
-      styleIcon = ' fa-check';
-      if (success.input.split(" ")[0] == 'TR' | success.input.split(" ")[0] == '2nd') {
-        styleColour = ' blue';
-      } else {
-        styleColour = ' green';
-      }
-    }
-    else {
-      // style has not been set
-      styleIcon = ' fa-question';
-      styleColour = ' grey';
-      styleUnset = ' - style not set';
-    }
-
-    // beta: swap _ from data for β
-    const withBeta = style.replace(/_/g,"β (flash)");
-    const styleHtml = `<div class="style${styleColour}"><i class="fa${styleIcon}"></i>${withBeta} ${styleUnset !== undefined ? `${styleUnset}` : ""}</div>`;
-
-
-
-    // _________________
-    // partner(s)
-    // if string contains a comma. Will break if partner's name does not contain a comma for some reason.
-    const partnerPlural = partners.includes(',');
-    const partnerHtml = `${partners.length > 0 ? `<div class="partners"><i class="fa fa-user${partnerPlural == false ? "" : "s"}"></i>${partners}</div>`: ""}`;
-
-
-    // _________________
-    // notes
-    // - if notes overflow, add an overlay with linear gradient to fade out
-    const notesHtml = `
-    <div class="notes${notes ? "" : " no-notes"}">
-    <i class="fa fa-edit"></i>${notes ? ascent.Notes : "No notes contributed for this climb"}
-    </div>`;
-
-
-    // calendar thing
-    const calDate = calendarHtml(date);
-    const dateHtml = `<div class="date">${calDate}</div>`;
-    
-    // add top margin to hold position in the list. Subtract height of searchbar
-    const html = `
-    <ul class="climb-info"${topOffset > 10 ? ` style="margin-top:${topOffset}px;"` : ""}>
-      <li>
-        <div class="back">
-          ${dateHtml}
-          <i class="fa fa-chevron-left"></i>
-        </div>
-        <div class="climb-details">
-          <div class="save" data-id="${ID}"><i class="fa fa-save" title="save details"></i><div class="climb-settings"></div></div>
-          <div class="title">${name}</div>
-          ${gradeHtml}
-          ${disciplineHtml}
-          ${styleHtml}
-          ${partnerHtml}
-          ${notesHtml}
-          <div class="crag"><i class="fa fa-map-marker red"></i>${crag}</div>
-        </div>
-      </li>
-    </ul>
-    `;
-
-    listContainer.insertAdjacentHTML('beforeend', html);
-    listContainer.classList.add('slide-left');
-    // could be simplified:
-    suggestions.classList.add('shadow-off');
-    favourites.classList.add('shadow-off');
-
-    // keep position of climb-info (prevent scroll)
-    document.body.classList.add('fixed');
-
-    // search bar
-    searchInput.setAttribute("style", `top:${topOffset}px;`); // set offset
-    searchInput.disabled = true; // disable input
-
-    // notes
-    // - happens after noesHtml is added to DOM
-    // - need to evaluate if text overflows after it has been added to the DOM
-    const notesLi = listContainer.querySelector('.notes');
-
-    if (isOverflown(notesLi) == true) {
-
-      notesLi.classList.add('overflow');
-      const tallContent = `<i class="fa fa-edit"></i><div>${notesLi.textContent}</div><div class="fade-out"><i class="fa fa-chevron-down"></i></div>`;
-      notesLi.innerHTML = "";
-      notesLi.insertAdjacentHTML('beforeend', tallContent);
-    }
-
-
-
-    // ____________________
-    // favourite and memorable buttons
-    // - if they exist, remove when moving to climb info view
-
-    // favourite
-    if(favClimbs.length > 0){
-      btnContainer.querySelector('.favBtn').remove();
-      btnContainer.parentNode.classList.add('hidden');
-      // || memClimbs.length > 0
-      // btnContainer.querySelector('.memBtn').remove();
-    }
-    
-    
-
-
+  // suggestions, favourites, memorable
+  if (!memUl) {
+    listContainer.classList.add('slide-left'); // slide container left
+    mainLists.forEach(list => (list.classList.add('shadow-off'))); // remove shadow on li's
   }
 
 
+  // ________________
+  // memorable day > route
+  else {
+    listContainer.classList.add('slide-left-again'); // slide container left
+    memUlEl.classList.add('shadow-off'); // remove shadow on li's
+  }
 
 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// climb detail function
+// - fires on suggestions, favourites, and memorable day > routes
+// - completely independent from li.memorable-item (main/parent memorable day li)
+// - just composes li html, and gives it a top margin
+function climbDetail(e) {
+  if (!e.target.matches('li.searched:not(.memorable-item)')) return;
+
+  // offset the .climb-info ul with a top margin
+  // - required for elements at the bottom of the page / when scrolled down
+  const topOffset = (window.pageYOffset + 10).toString();
+
+
+  // get the ID (convert to numeric)
+  const ID = parseInt(e.target.getAttribute('data-id'));
+  // get the climb from the array
+  const ascent = climbs[ID];
+  // get full info
+  const date = ascent.Date;
+  const name = ascent["Climb name"];
+  // convert to string (lower grade american routes are numerical)
+  const grade = (ascent.Grade).toString();
+  const style = ascent.Style;
+  const partners = ascent["Partner(s)"];
+  const notes = ascent.Notes;
+  const crag = ascent["Crag name"];
+
+  
+
+  
+  // _________________
+  // grade - most complex parameter of the lot
+  // - star count, discipline, grade band colour
+  // - grade band dependent upon discipline, and grading system
+  // - can't tell discipline from grade for roped climbs, unless in UK system
+
+  // order:
+  // uk trad, sport / french, USA, norse, bouldering (font and V grades), winter, ice
+
+  // get the grade - first word of string
+  const getGrade = grade.split(" ")[0];
+  
+  // grade bands object
+  const gradeBands = expand({
+
+    "none" : {
+      band : ' grey'
+    },
+    "M, D, VD, HVD, S, 1, 2, 2a, 2b, 2c, 3, 3a, 3b, 3c, 4a, 4b, 4c, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, n1, n2, n3, n4, f1, f2, f2+, f3, f3+, VB, V0-, V0, I, II, WI-1, WI-2" : {
+      band : ' green'
+    },
+    "HS, MVS, VS, HVS, 5a, 5b, 5c, 6a, 6a+, 5.7, 5.8, 5.9, 5.10a, 5.10b, 5.10c, n5-, n5, n5+, f4, f4+, V0+, V1, V2, III, IV, WI-3, WI-4" : {
+      band : ' yellow'
+    },
+    "E1, E2, E3, 6b, 6b+, 6c, 6c+, 7a, 5.10d, 5.11a, 5.11b, 5.11c, 5.11d, n6-, n6, n6+, f5, f5+, V3, V4, V5, V6, f6A, f6A+, V, VI, WI-5" : {
+      band : ' red'
+    },
+    "E4, E5, E6, E7, E8, E9, E10, E11, E12, 7a+, 7b, 7b+, 7c, 7c+, 8a, 8a+, 8b, 8b+, 8c, 8c+, 9a, 9a+, 9b, 9b+, 9c, 5.12a, 5.12b, 5.12c, 5.12d, 5.13a, 5.13b, 5.13c, 5.13d, 5.14a, n7-, n7, n7+, n8-, n, n8+, f6B, f6B+, f6C, f6c+, f7A, f7A+, f7B, f7B+, f7C, f7C+, f8A, V7, V8, V9, V10, V11, V12, V13, V14, V15, VII, VIII, IX, X, WI-6, WI-7" : {
+      band : ' black'
+    }
     
+  });
+
+
+
+  // grade - get colour brand from object
+  const getColour = gradeBands[getGrade].band;
+
+  // regex for discipline - more efficient than an object
+  let discipline;
+  if (grade.match(/^W/)) {
+    discipline = 'ice';
+  }
+  else if (grade.match(/^M[0-9]/)) { // M followed by a number
+    discipline = 'mixed';
+  }
+  else if (grade.match(/^f/)) {
+    discipline = 'bouldering';
+  }
+  else if (grade.match(/^I|V(?!S|D)/)) { // I or V if not followed by S or D
+    discipline = 'winter';
+  }
+  else if (grade.match(/^[A-Z]/)) { // starts with a capital letter, comes after the above
+    discipline = 'UK trad';
+  }
+  else if (grade.match(/^[1-9][a-c]/)) { // starts with a number, followed by lowercase letter
+    discipline = 'French grade - usually sport';
+  }
+  else if (grade.match(/^5/)) { // starts with a 5
+    discipline = 'American grade - sport or trad';
+  }
+  else if (grade.match(/^n[1-9]/)) { // starts with a lowercase n, followed by a number
+    discipline = 'Norse grade - sport or trad';
+  }
+  else if (grade.match(/^none/)) { // none
+    discipline = 'Southern Sandstone - (french grade not set, UK grade)';
+  }
+
+  // stars: swap * for fa-star
+  const withStars = grade.replace(/\*/g,"<i class='fa fa-star yellow margin-left'></i>");
+  const gradeHtml = `<div class="grade"><i class="fa fa-circle${getColour}"></i>${withStars}</div>`;
+
+  // discipline
+  const disciplineHtml = `<div class="discipline"><i class="fa fa-chevron-right"></i>${discipline}</div>`;
+
+
 
 
 
@@ -598,57 +563,334 @@ function moreInfo(e) {
 
 
   
-  // back button - to suggestions list
+  
+  // _________________
+  // style
+  // Lead (or solo) + (0/S, _, RP, rpt, x) = green (note that '_' is a flash)
+  // TR + (0/S, _, &beta, G/U, RP, rpt) = blue
+  // dog, dnf = red
 
-  // target back button / icon
-  if (e.target && e.target.nodeName == "DIV" && e.target.classList.contains('back')) {
+  let success = /(O\/S|_|&beta|G\/U|RP|rpt|x)/;
+  success = style.match(success);
 
-    // slide right
-    listContainer.classList.remove('slide-left');
-    // add default shadow back to .suggestions
-    suggestions.classList.remove('shadow-off');
-    // searchbar
-    searchInput.setAttribute('style', 'top:10px;'); // position searchbar at top
-    searchInput.disabled = false; // enable input
+  let fail = /(dog|dnf)/;
+  fail = style.match(fail);
 
-    // remove climb info ul
-    // - take delay value from css (transition on list container = 0.5s)
-    // - remove 's'
-    let time = window.getComputedStyle(listContainer).transitionDuration.slice(0, -1);
-    // - multiply by 1000
-    time = parseFloat(time)*1000;
+  // set colour and icon
+  let styleColour;
+  let styleIcon;
+  let styleUnset;
+  
+  if (fail !== null){
+    styleColour = ' red';
+    styleIcon = ' fa-close';
+  }
+  else if (success !== null){
+    styleIcon = ' fa-check';
+    if (success.input.split(" ")[0] == 'TR' | success.input.split(" ")[0] == '2nd') {
+      styleColour = ' blue';
+    } else {
+      styleColour = ' green';
+    }
+  }
+  else {
+    // style has not been set
+    styleIcon = ' fa-question';
+    styleColour = ' grey';
+    styleUnset = ' - style not set';
+  }
+
+  // beta: swap _ from data for β
+  const withBeta = style.replace(/_/g,"β (flash)");
+  const styleHtml = `<div class="style${styleColour}"><i class="fa${styleIcon}"></i>${withBeta} ${styleUnset !== undefined ? `${styleUnset}` : ""}</div>`;
+
+
+
+  // _________________
+  // partner(s)
+  // if string contains a comma. Will break if partner's name does not contain a comma for some reason.
+  const partnerPlural = partners.includes(',');
+  const partnerHtml = `${partners.length > 0 ? `<div class="partners"><i class="fa fa-user${partnerPlural == false ? "" : "s"}"></i>${partners}</div>`: ""}`;
+
+
+  // _________________
+  // notes
+  // - if notes overflow, add an overlay with linear gradient to fade out
+  const notesHtml = `
+  <div class="notes${notes ? "" : " no-notes"}">
+  <i class="fa fa-edit"></i>${notes ? ascent.Notes : "No notes contributed for this climb"}
+  </div>`;
+
+
+  // calendar thing
+  const calDate = calendarHtml(date);
+  const dateHtml = `<div class="date">${calDate}</div>`;
+  
+  
+  
+  // add top margin to hold position in the list. Subtract height of searchbar
+  const html = `
+  <ul class="climb-info"${topOffset > 10 ? ` style="margin-top:${topOffset}px;"` : ""}>
+    <li>
+      <div class="back-to-matches">
+        ${dateHtml}
+        <i class="fa fa-chevron-left"></i>
+      </div>
+      <div class="climb-details">
+        <div class="save" data-id="${ID}"><i class="fa fa-save" title="save details"></i><div class="climb-settings"></div></div>
+        <div class="title">${name}</div>
+        ${gradeHtml}
+        ${disciplineHtml}
+        ${styleHtml}
+        ${partnerHtml}
+        ${notesHtml}
+        <div class="crag"><i class="fa fa-map-marker red"></i>${crag}</div>
+      </div>
+    </li>
+  </ul>
+  `;
+
+
+  // add to DOM
+  listContainer.insertAdjacentHTML('beforeend', html);
+
+
+  // notes
+  // - happens after noesHtml is added to DOM
+  // - need to evaluate if text overflows after it has been added to the DOM
+  const notesLi = listContainer.querySelector('.notes');
+
+  if (isOverflown(notesLi) == true) {
+    notesLi.classList.add('overflow');
+    const tallContent = `<i class="fa fa-edit"></i><div>${notesLi.textContent}</div><div class="fade-out"><i class="fa fa-chevron-down"></i></div>`;
+    notesLi.innerHTML = "";
+    notesLi.insertAdjacentHTML('beforeend', tallContent);
+  }
+  
+  
+
+
+
+} // end climbDetail()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ________________________________________
+// day detail function
+// - memorable day click
+// - user can edit note, and see count of routes climbed that day
+// - click routes to reveal route list - separate function
+
+function dayDetail(e) {
+
+  if (!e.target.matches('li.memorable-item')) return;
+
+  // top offset - for items further down the list
+  const topOffset = (window.pageYOffset + 10).toString();
+
+  // get info from memDays
+  const index = parseInt(e.target.dataset.index);
+  const data = memDays[index];
+
+  // date
+  const date = data.day;
+  const calDate = calendarHtml(date);
+  const dateHtml = `<div class="date">${calDate}</div>`;
+
+  // mark as checked
+  const isMem = memDays.find(day => day.day === date);
+
+  // note
+  const note = data.note || '';
+
+  // route count
+  const routeCount = data.ascentIDs.length;
+
+
+
+  // add top margin to hold position in the list. Subtract height of searchbar
+  const html = `
+  <ul class="climb-info"${topOffset > 10 ? ` style="margin-top:${topOffset}px;"` : ""}>
+    <li>
+      <div class="back-to-matches">
+        ${dateHtml}
+        <i class="fa fa-chevron-left"></i>
+      </div>
+      <div class="climb-details">
+        <div class="memorable-day">
+          <input id="${date}" type="checkbox" name="memorable-day" data-id="${index}" ${isMem ? 'checked' : ''}>
+          <label for="${date}">Memorable Day</label>
+          <textarea${note.length === 0 ? ' placeholder="Add something to remember this day by">' : `>${note}`}</textarea>
+        </div>
+        <div class="routes" data-route-ids="${data.ascentIDs}"><i class="fa fa-chevron-down"></i>${routeCount} route${routeCount > 1 ? 's' : ''} climbed this day</div>
+      </div>
+    </li>
+  </ul>
+  `;
+
+  // add to DOM
+  listContainer.insertAdjacentHTML('beforeend', html);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ________________________________________
+// back to matches function
+// - back to suggestions, favourites, memorable, and memorable day > routes
+// -  memorable day > routes handled differently
+// - works with detailView()
+function backToMatches(e){
+  if (!e.target.matches('div.back-to-matches')) return;
+
+  // ________________
+  // ALL back clicks
+
+  // searchbar
+  searchInput.setAttribute('style', 'top:10px;'); // position searchbar at top
+  searchInput.disabled = false; // enable input
+
+  // timeout value
+  const time = parseFloat(window.getComputedStyle(listContainer).transitionDuration.slice(0, -1))*1000;
+
+
+
+
+  // ________________
+  // clicked from .climb-info view (memorable day > route)
+  const memView = e.target.closest('.climb-info').previousElementSibling.classList.contains('climb-info');
+  const memViewEl = e.target.closest('.climb-info').previousElementSibling;
+  const memRouteEl = e.target.closest('.climb-info');
+
+
+  // suggestions, favourites, memorable
+  if (!memView) {
+    listContainer.classList.remove('slide-left'); // slide container left
+    mainLists.forEach(list => (list.classList.remove('shadow-off'))); // remove shadow on li's
+    // remove climb info ul, and fixed class from body
     setTimeout(function(){
       listContainer.querySelector('.climb-info').remove();
       document.body.classList.remove('fixed');
     }, time);
+  }
 
 
+  // ________________
+  // memorable day > route
+  else {
+    listContainer.classList.remove('slide-left-again'); // slide container left
+    memViewEl.classList.remove('shadow-off'); // remove shadow on li's
     
-    
-    // ____________________
-    // favourite and memorable buttons
-    // - add / reveal (if required) when moving back to suggestions list
-    const favBtnPresent = btnContainer.querySelector('.favBtn') != null;
-
-    // favourite(s) added
-    if(favClimbs.length > 0 && favBtnPresent == false){
-      const favBtn = '<button class="favBtn"><i class="fa fa-heart"></i></button>';
-      btnContainer.parentNode.classList.remove('hidden');
-      btnContainer.insertAdjacentHTML('afterbegin', favBtn); // at start of div. beforeend on memorable
-    }
-    // no favourite(s)
-    if(favClimbs.length == 0){
-      btnContainer.parentNode.classList.add('hidden');
-      // - make sure suggestions list is visible
-      suggestions.classList.remove('hidden');
-      favourites.classList.add('hidden');
-    }
-
+    // remove climb info ul, and fixed class from body
+    setTimeout(function(){
+      memRouteEl.remove();
+      document.body.classList.remove('fixed');
+    }, time);
 
   }
 
 
-} // end moreInfo() - individual climbs
+
+
+  // button configuration
+  // - add or remove favourite and memorable buttons
+  // - hide or reveal back to search button
+  // - DOES NOT handle clicks
+  const favBtnPresent = btnContainer.querySelector('.favBtn') != null;
+  const memBtnPresent = btnContainer.querySelector('.memBtn') != null;
+
+  const favBtn = '<button class="favBtn"><i class="fa fa-heart"></i></button>';
+  const memBtn = '<button class="memBtn"><i class="fa fa-book"></i></button>';
+
+
+  // favourite routes
+  // - add
+  if (favClimbs.length > 0 && favBtnPresent == false){
+    btnContainer.parentNode.classList.remove('hidden');
+    btnContainer.insertAdjacentHTML('afterbegin', favBtn); // at start of div. beforeend on memorable
+  }
+  // - remove
+  if (favClimbs.length == 0 && favBtnPresent == true){
+    btnContainer.querySelector('.favBtn').remove();
+    favourites.classList.add('hidden');
+  }
+
+  // memorable days
+  // - add
+  if (memDays.length > 0 && memBtnPresent == false){
+    btnContainer.parentNode.classList.remove('hidden');
+    btnContainer.insertAdjacentHTML('beforeend', memBtn); // end of div
+  }
+  // - remove
+  if (memDays.length == 0 && memBtnPresent == true){
+    btnContainer.querySelector('.memBtn').remove();
+    memorable.classList.add('hidden');
+  }
+
+
+  // no favs or mem
+  if (favClimbs.length == 0 && memDays.length == 0) {
+    btnContainer.parentNode.classList.add('hidden');
+    suggestions.classList.remove('hidden');
+  }
+
+
+
+
+  // button active
+  // - look at original list navigated from
+  // - this MUST run after buttons have been added above
+  const lists = Array.from(listContainer.children);
+  const activeList = lists.filter(list => (!list.classList.contains('hidden')))[0];
+  const activeClass = activeList.classList[0];
+
+  const className = {
+    favourites : '.favBtn',
+    memorable : '.memBtn'
+  }
+
+  // target favourite and memorable ONLY
+  const BtnPresent = btnContainer.querySelector(className[activeClass]) != null;
+  if (BtnPresent) {
+    btnContainer.querySelector(className[activeClass]).classList.add('active');
+    searchInput.disabled = true;
+  }
+
+
+
+
+}
+
+
+
+
 
 
 
@@ -662,55 +904,60 @@ function moreInfo(e) {
 
 // ________________________________________
 // show climb save options
+// - takes e.target on the save button to toggle on/off
 function climbSettings(e) {
 
 
-  // open
+  // open view
   if (e.target && e.target.nodeName == "DIV" && e.target.classList.contains('save')) {
     e.target.classList.add('expanded');
     e.target.parentNode.previousElementSibling.classList.add('no-pointers'); // make back btn non clickable
 
-    let ID = e.target.getAttribute('data-id');
-    ID = parseInt(ID);
-    const ascent = climbs[ID]; // can get date from ID, then search climbs array for other climbs on this day
-    const name = ascent["Climb name"];    
+    const ID = parseInt(e.target.getAttribute('data-id'));
+    const ascent = climbs[ID];
+    const name = ascent["Climb name"];
+    const date = ascent.Date;   
     
     // need to check or uncheck checkboxes
-    // - favClimbs array
+    // - use .find() from arrays in localStorage
     const isFav = favClimbs.find(climb => climb.routeID === ID.toString());
+    const isMem = memDays.find(day => day.day === date);
+
+    // memorable note
+    let note;
+    isMem ? note = isMem.note : '';
 
     const html = `
     <div class="title">
       ${name}
     </div>
-    <div class="favourite">
-      <div><i class="fa fa-heart red"></i>Favourite Route</div>
-      <div><input type="checkbox" name="favourite" data-id="${ID}" ${isFav ? 'checked' : ''}/><label></label></div>
+    <div class="favourite-climb">
+      <input id="${name}" type="checkbox" name="favourite-climb" data-id="${ID}" ${isFav ? 'checked' : ''}>
+      <label for="${name}">Favourite Route</label>
     </div>
     <div class="memorable-day">
-      <div><i class="fa fa-book blue"></i>Memorable Day</div>
-      <div><input type="checkbox" name="memorable" data-id="${ID}"/></div>
-      <div><textarea placeholder="Add something to remember this day by"></textarea></div>
+      <input id="${date}" type="checkbox" name="memorable-day" data-id="${ID}" ${isMem ? 'checked' : ''}>
+      <label for="${date}">Memorable Day</label>
+      <textarea placeholder="Add something to remember this day by">${note ? note : ''}</textarea>
     </div>
     `;
     
+    // add html and slide open after a timeout
+    // - checkboxes in a separate function
     setTimeout(function(){
       e.target.querySelector('.climb-settings').innerHTML = html;
       e.target.querySelector('.climb-settings').classList.add('slide');
-      // checkboxes - save data to local storage
-      const checkboxes = Array.from(e.target.querySelectorAll('input[type=checkbox]'));
-      checkboxes.forEach(checkbox => checkbox.addEventListener('click', saveClimb));
-
     }, 1000);
     
   }
 
 
-  // close
+
+
+  // close view
   if (e.target && e.target.nodeName == "I" && e.target.classList.contains('fa-save')) {
     
     e.target.setAttribute('title', 'save details');
-
     e.target.nextSibling.classList.remove('slide');
     setTimeout(function(){
       e.target.nextSibling.innerHTML = "";
@@ -723,7 +970,6 @@ function climbSettings(e) {
 
 
 
-listContainer.addEventListener("click", climbSettings);
 
 
 
@@ -732,50 +978,97 @@ listContainer.addEventListener("click", climbSettings);
 
 
 
-// ________________________________________
-// save options: favourite route, and memorable date
-
-// favourite climbs - parsed from localStorage, or empty array
-// const favClimbs = JSON.parse(localStorage.getItem('favClimbs')) || [];
 
 
-function saveClimb() {
 
-  const saveType = this.getAttribute('name');
-  const routeID = this.getAttribute('data-id');
+// ________________________________________________
+// favourites functions:
 
+
+
+// save climb function:
+// - saves favourite routes and memorable days to localStorage
+// - fires favouriteClimbs() - composes html
+function saveClimb(e) {
+
+  if (!e.target.matches('input')) return;
+  const el = e.target;
+  const saveType = el.name;
+  const routeID = el.dataset.id;
 
   // favourite climbs
-  if (saveType === 'favourite') {
-    // console.log(`favourite route id = ${routeID}`);
-    let favourite;
+  // - item can't match html selector
+  if (saveType === 'favourite-climb') {
+    let favItem;
 
-    // checkbox needs to be checked and unchecked in the html to work correctly
-    // - this happens with array .find method in the climbSettings function
-    if (this.checked) {
-      favourite = {
+    // create an array of objects - for favourite routes
+    if (el.checked) {
+      favItem = {
         routeID,
         done : true
       };
-      favClimbs.push(favourite);
+      favClimbs.push(favItem);
     } else {
-      favClimbs.pop(favourite);
+      favClimbs.pop(favItem);
     }
 
-    // output favourites list in html - (array, html selector)
-    selectedClimbs(favClimbs, favourites);
-    // save favourites into localStorage
-    localStorage.setItem('favClimbs', JSON.stringify(favClimbs));
+    debounce(favouriteClimbs(favClimbs, favourites)); // output favourites list in html - (array, html selector)
+    localStorage.setItem('favClimbs', JSON.stringify(favClimbs)); // save favourites into localStorage
   }
 
 
 
 
 
+
   // memorable days
-  if (saveType === 'memorable') {
-    console.log(`memorable route id = ${routeID}`);
-    // if box is checked or text entered - will require another event listener
+  if (saveType === 'memorable-day') {
+    let memItem;
+
+    // create an array of objects - for memorable days
+
+
+    // climbs with index - of ascent entry in logbook:
+    // - make this the default array in localStorage, it is probably more useful this way
+    const climbIndex = climbs.map(entry => {
+      const climbID = climbs.indexOf(entry).toString();
+      // set a new ID - index to find the ascent with
+      entry.climbID = climbID;
+      return entry;
+    });
+
+    
+    const memDay = el.id;
+    // filter climbIndex. Get the index of each climb to add to object, nothing else
+    const ascents = climbIndex.filter(climb => (climb.Date === memDay));
+    // - each item in routes array is a {} with climbID as a key
+    // - extract this ID value, add to a []
+    const ascentIDs = [];
+    ascents.forEach(ascent => ascentIDs.push(ascent.climbID));
+
+    // toggle on / off
+    // const index = el.index;
+    // memDays[index].on = !memDays[index].on;
+
+    // preserve note on check / uncheck. Gets textarea content
+    const note = el.nextElementSibling.nextElementSibling.textContent;
+
+    if (el.checked) {
+      memItem = {
+        day : memDay,
+        ascentIDs,
+        note, // retrieved above, and from memorableNotes() function
+        on : true
+      };
+      memDays.push(memItem);
+    }
+    else {
+      memDays.pop(memItem);
+    }
+
+    debounce(memorableDays(memDays, memorable)); // html
+    localStorage.setItem('memDays', JSON.stringify(memDays)); // localStorage
+
   }
 
 
@@ -785,45 +1078,127 @@ function saveClimb() {
 
 
 
+
+
+
+// ________________________________________________
+// memorable functions:
+
 // ________________________________________
-// favourite climbs html - make addable anywhere
+// memorable notes function:
+// - saves note to localStorage
+// - textarea on keyup
+function memorableNotes(e) {
+  if (!e.target.matches('textarea')) return;
+  
+  // get value
+  const dayNote = e.target.value;
+
+  // get associated day
+  // console.dir(e.target.previousElementSibling.htmlFor);
+  const dayID = e.target.previousElementSibling.htmlFor;
+
+  // add to object => passes to memDays
+  const addNote = memDays.filter(entry => (entry.day === dayID));
+  addNote.forEach(item => item.note = dayNote);
+  
+  debounce(memorableDays(memDays, memorable));
+  localStorage.setItem('memDays', JSON.stringify(memDays));
+  
+}
+
+
+
+// ________________________________________
+// memorable day - show routes function:
+// - will output html to DOM on first click
+// - will hide and reveal thereafter
+function memorableRoutes(e) {
+  if (!e.target.matches('.routes')) return;
+
+  // icon
+  const icon = e.target.querySelector('.fa').classList;
+  icon.toggle('fa-chevron-down');
+  icon.toggle('fa-chevron-up');
+
+  // body
+  document.body.classList.toggle('fixed');
+
+  // get details of routes climbed that day
+  const routeIds = (e.target.dataset.routeIds).split(",");
+  // - filter climbs array
+  let memRoutes = [];
+  routeIds.filter(id => (
+    memRoutes.push(climbs[id])
+  ));
+
+  
+  // - get parent list
+  const parentList = e.target.closest('ul');
+
+  // - get list lengths
+  const startLen = parentList.children.length;
+  const listLen = memRoutes.length;
+
+  // first click only:
+  // - compose html and append to ul
+  if (startLen < listLen) {
+    debounce(climbedOnDate(memRoutes, parentList));
+  }
+  // all subsequent clicks:
+  // - hide and search reveal list items
+  else {
+    const items = parentList.querySelectorAll('.searched');
+    // console.log(a);
+    // a.classList.toggle('hidden');
+    items.forEach(item => (item.classList.toggle('hidden')));
+  }
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// ________________________________________
+// favourite climbs function:
+// - composes html for favourites
+// - used in other functions, requires climbs array and route ID
+// - parameters: (array, element to add into)
 // - params: array, element to add into
-// - note: this recreates the list (html) every time an item is added or removed.
-//  - a library or framework may be useful here > smarter + improve performance
+// - note: a library or framework may be useful here > add/remove less html smarter + improve performance
 
-// NOTE: a different array method - e.g. reduce may be useful
-// - same routes have been climbed multiple times, I am just marking individual ascents here:
+function favouriteClimbs(favouriteClimbs = [], climbsList) {
+  climbsList.innerHTML = favouriteClimbs.map((climb, i) => {
 
-// new version: going towards a loop within a loop (for repeat ascents)
-function selectedClimbs(selectedClimbs = [], climbsList) {
-  climbsList.innerHTML = selectedClimbs.map((climb, i) => {
-
-    // const climbs = 
-    const climbs = JSON.parse(localStorage.getItem('climbs'));
-    
-    // get climb details. climb.routeID = ID (from previous)
     const ascent = climbs[climb.routeID];
     const date = ascent.Date;
     const name = ascent["Climb name"]
     const crag = ascent["Crag name"];
     
     
-    
-    // find if the ascent was a repeat:
-    // NOTE: this looks for route name and crag
-    // - if 2 crags of the same name both have a route with the same name, this won't work.
+    // repeat ascents:
+    // - looks for route name and crag
+    // - CAVEAT: if 2 crags of the same name both have a route with the same name, this won't work.
     const rptAscent = climbs.filter(climb => (climb["Climb name"] === name && climb["Crag name"] === crag));
 
-    // another idea:
-    // - output all repeat ascents as list items
-
-    // output all favourited ascents
+    // compose html, and join array items
     return `
-    <li class="searched favourite" data-date="${date}" data-id="${climb.routeID}" data-index="${i}">
+    <li class="searched favourite${rptAscent.length > 1 ? ` repeat` : ''}" data-date="${date}" data-id="${climb.routeID}" data-index="${i}">
       <span class="date">${date}</span>
       <span class="name">${name}, ${crag}</span>
       <span class="more"><i class="fa fa-chevron-right"></i></span>
-      ${rptAscent.length > 1 ? `<span class="repeat">You have climbed <em>'${name}'</em> ${rptAscent.length} times</span>` : ''}
+      ${rptAscent.length > 1 ? `<span class="repeat-note"><i class="fa fa-rotate-right"></i>You have climbed <em>'${name}'</em> ${rptAscent.length} times</span>` : ''}
     </li>
     `;
   }).join('');
@@ -835,12 +1210,88 @@ function selectedClimbs(selectedClimbs = [], climbsList) {
 
 
 
+// ________________________________________
+// memorable days function:
+// - compose a list of days (not climbs)
+// - clicking a day leads to list of routes climbed that day
+// - can't be combined with the above favouriteClimbs(). Too complex
+function memorableDays(memorableDays = [], daysList) {
+  daysList.innerHTML = memorableDays.map((day, i) => {
+
+    const date = day.day;
+    const routes = day.ascentIDs;
+    const note = day.note;
+
+    // compose html, and join array items
+    return `
+    <li class="searched memorable-item" data-date="${date}" data-route-ids="${routes}" data-index="${i}">
+      <span class="date">${date}</span>
+      <span class="memorable-notes">${note ? note : `Memorable Day: no notes...`}</span>
+      <span class="more"><i class="fa fa-chevron-right"></i></span>
+    </li>
+    `;
+  }).join('');
+}
+
+
+
+
+
+
+// ________________________________________
+// climbed on date function:
+// - similar to displayMatches();
+
+// - compose a list of ascents made on a memorable day, and append to list (after 1st list item)
+// - clicking an ascent leads to more details on the ascent
+// - parameters(ascent list, html)
+function climbedOnDate(memorableClimbs = [], climbsList) {
+  
+  const html = memorableClimbs.map((ascent, i) => {
+    const date = ascent.Date;
+    const ascentID = climbs.indexOf(ascent); // look at climbs array
+    const name = ascent["Climb name"];
+    const crag = ascent["Crag name"];
+
+    // compose html, and join array items
+    return `
+    <li class="searched" data-date="${date}" data-id="${ascentID}" data-index="${i}">
+      <span class="date">${date}</span>
+      <span class="name">${name}, ${crag}</span>
+      <span class="more"><i class="fa fa-chevron-right"></i></span>
+    </li>
+    `;
+  }).join('');
+
+  // add html
+  climbsList.insertAdjacentHTML('beforeend', html);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ________________________________________
 // favourite / memorable climbs button clicks
-// - requires e.target
+// - works on page load (data supplied from localStorage)
+// - works on button click (fav, mem, back)
+
+// issues (think these are sorted now)
+// - classList of undefined. Need to see if lists exist before manipulating them
+// - same with buttons too, no doubt
+// - buttons get added with back button (fav and mem)
 function favMemBtns(e) {  
   
+  // back button - exists in DOM on pageload
   const backBtn = btnContainer.parentNode.querySelector('.backBtn');
   const backBtnActive = backBtn.querySelector('.fa-chevron-left') != null;
 
@@ -849,60 +1300,104 @@ function favMemBtns(e) {
   if(e !== undefined) {
     e.preventDefault();
 
-    const favBtn = btnContainer.querySelector('.favBtn');
+    // conditionals
+    // - clicks
+    const favouriteClick = e.target.classList.contains('favBtn');
+    const memorableClick = e.target.classList.contains('memBtn');
+    const resultsClick = e.target.classList.contains('backBtn');
+    // - presence in DOM
+    const favBtnPresent = btnContainer.querySelector('.favBtn') != null;
+    const memBtnPresent = btnContainer.querySelector('.memBtn') != null;
+
+
     
-    // favourite btn
-    if (e.target.classList.contains('favBtn')) {
+    // lists
+    // - lists are always present in the DOM
+
+    // - suggestions list
+    if (resultsClick) {
+      suggestions.classList.remove('hidden');
+      favourites.classList.add('hidden');
+      memorable.classList.add('hidden');
+      searchInput.disabled = false;
+    }
+    // - favourites list
+    if (favouriteClick) {
       suggestions.classList.add('hidden');
       favourites.classList.remove('hidden');
-      // button
-      e.target.classList.add('active');
+      memorable.classList.add('hidden');
+      searchInput.disabled = true;
+    }
+    // - memorable list
+    if (memorableClick) {
+      suggestions.classList.add('hidden');
+      favourites.classList.add('hidden');
+      memorable.classList.remove('hidden');
+      searchInput.disabled = true;
+    }
+
+    
+
+
+
+    // buttons
+    // - unlike lists, buttons are not always present in the DOM
+
+    // - target button (universal)
+    e.target.classList.add('active');
+
+    // - back button
+    if (favouriteClick || memorableClick) {
       backBtn.classList.remove('active');
-      // add back chevron if not there
       if (backBtnActive == false) {
         backBtn.insertAdjacentHTML('afterbegin', '<i class="fa fa-chevron-left"></i>');
       }
     }
-
-    // back btn
-    // - add in back icon when above buttons clicked
-    // - need to show suggestions list when searchbar clicked too
-    if (e.target.classList.contains('backBtn')) {
-      suggestions.classList.remove('hidden');
-      favourites.classList.add('hidden');
-      // button
-      e.target.classList.add('active');
-      favBtn.classList.remove('active');
-      // remove back button if there
-      if (backBtnActive == true) {
-        e.target.querySelector('.fa-chevron-left').remove();
-      }
+    if (resultsClick && backBtnActive == true) {
+      backBtn.querySelector('.fa-chevron-left').remove();
     }
 
+    // - favourite button
+    if (favBtnPresent && (memorableClick || resultsClick)) {
+      const favBtn = btnContainer.querySelector('.favBtn');
+      favBtn.classList.remove('active');
+    }
+
+    // - memorable button
+    if (memBtnPresent && (favouriteClick || resultsClick)) {
+      const memBtn = btnContainer.querySelector('.memBtn');
+      memBtn.classList.remove('active');
+    }
+
+  
+
   }
 
 
-  // event fired on climbs array load: (looks for favClimbs from localStorage)
+
+
+
+
+  
+  
+  // event fired on page load:
+  // - looks for arrays from localStorage
   else {
-    // indicates that climbs have been favourited:
+    // climbs have been favourited:
     // - fav button
-    const favBtn = '<button class="favBtn"><i class="fa fa-heart"></i></button>';
-    btnContainer.parentNode.classList.remove('hidden');
-    btnContainer.insertAdjacentHTML('afterbegin', favBtn);
+    if (favClimbs.length > 0) {
+      const favBtnHtml = '<button class="favBtn"><i class="fa fa-heart"></i></button>';
+      btnContainer.parentNode.classList.remove('hidden');
+      btnContainer.insertAdjacentHTML('afterbegin', favBtnHtml);
+    }
 
+    // memorable dates have been added:
+    if (memDays.length > 0) {
+      const memBtnHtml = '<button class="memBtn"><i class="fa fa-book"></i></button>';
+      btnContainer.parentNode.classList.remove('hidden');
+      btnContainer.insertAdjacentHTML('beforeend', memBtnHtml);
+    }
   }
-  
-
-
-  
-
-
-
-  // if (e.target.classList.contains('memBtn')) {
-  //   console.log('mem');
-  // }
-
-
 
   
 
@@ -912,39 +1407,11 @@ function favMemBtns(e) {
 
 
 
-btnContainer.parentNode.addEventListener("click", favMemBtns);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ________________________________________
-// image search test
-// const imageSearch = require('node_modules/node-google-image-search-promise');
-
-// imageSearch('<search-term>', 0, 5)
-//   .then(results => {
-//     // do something...
-//   });
 
 
 
 </script>
-
-
-<!-- <script src="js/build/client.bundle.js"></script> -->
-
-
 
 
   </body>
